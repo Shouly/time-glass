@@ -74,28 +74,15 @@ export function DateRangePicker({
         <PopoverTrigger asChild>
           <Button
             id="date"
-            variant={"outline"}
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !value && "text-muted-foreground"
-            )}
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 rounded-full hover:bg-muted/50"
           >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {value?.from ? (
-              value.to ? (
-                <>
-                  {format(value.from, "PPP", { locale: zhCN })} -{" "}
-                  {format(value.to, "PPP", { locale: zhCN })}
-                </>
-              ) : (
-                format(value.from, "PPP", { locale: zhCN })
-              )
-            ) : (
-              <span>选择日期范围</span>
-            )}
+            <CalendarIcon className="h-4 w-4" />
+            <span className="sr-only">选择日期范围</span>
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent className="w-auto p-0" align="end">
           <div className="flex items-center justify-between border-b p-3">
             <h3 className="text-sm font-medium">选择日期范围</h3>
             <div className="flex items-center space-x-2">

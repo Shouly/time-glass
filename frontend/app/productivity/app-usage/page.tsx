@@ -184,6 +184,34 @@ export default function AppUsagePage() {
     setDateRange(newDateRange);
     // 在实际应用中，这里会触发数据重新加载
   }
+
+  // 日期导航
+  const handlePrevDay = () => {
+    if (dateRange?.from && dateRange?.to) {
+      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      setDateRange({
+        from: addDays(dateRange.from, -daysDiff - 1),
+        to: addDays(dateRange.from, -1)
+      });
+    }
+  }
+
+  const handleNextDay = () => {
+    if (dateRange?.from && dateRange?.to) {
+      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+      const today = new Date();
+      const newFrom = addDays(dateRange.to, 1);
+      const newTo = addDays(dateRange.to, daysDiff + 1);
+      
+      // 不允许选择未来日期
+      if (newFrom <= today) {
+        setDateRange({
+          from: newFrom,
+          to: newTo <= today ? newTo : today
+        });
+      }
+    }
+  }
   
   // 过滤应用列表
   const getFilteredApps = () => {
@@ -224,30 +252,58 @@ export default function AppUsagePage() {
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">应用使用分析</h1>
-          <p className="text-muted-foreground">
-            分析员工使用的应用程序和工具，优化软件资源配置
-          </p>
-        </div>
-        
         <div className="flex justify-between items-center">
-          <DateRangePicker
-            value={dateRange}
-            onChange={handleDateChange}
-            className="w-[300px]"
-          />
-          <div className="text-sm text-muted-foreground">
-            最后更新: 今天 21:05
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">应用与网站活动</h1>
+            <p className="text-muted-foreground">
+              今天 21:05 更新
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-md">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handlePrevDay}
+              className="h-8 w-8 rounded-full"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center gap-1 px-2 py-1 bg-background rounded-md shadow-sm">
+              <span className="text-sm font-medium">
+                {dateRange?.from ? format(dateRange.from, "M月d日") : ""} 
+                {dateRange?.to && dateRange.from?.toDateString() !== dateRange.to.toDateString() 
+                  ? ` - ${format(dateRange.to, "M月d日")}` 
+                  : " 今天"}
+              </span>
+              <DateRangePicker
+                value={dateRange}
+                onChange={handleDateChange}
+                className="w-auto"
+              />
+            </div>
+            
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={handleNextDay}
+              className="h-8 w-8 rounded-full"
+              disabled={dateRange?.to && dateRange.to.toDateString() === new Date().toDateString()}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         
         {/* 概览统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总使用时间</CardTitle>
-              <Clock className="h-4 w-4 text-blue-500" />
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -259,10 +315,12 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">生产型应用时间</CardTitle>
-              <BarChart2 className="h-4 w-4 text-green-500" />
+              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center">
+                <BarChart2 className="h-4 w-4 text-green-600 dark:text-green-300" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -274,10 +332,12 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">中性应用时间</CardTitle>
-              <PieChart className="h-4 w-4 text-blue-500" />
+              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+                <PieChart className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -289,10 +349,12 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
           
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
+          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">非生产型应用时间</CardTitle>
-              <Clock className="h-4 w-4 text-red-500" />
+              <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center">
+                <Clock className="h-4 w-4 text-red-600 dark:text-red-300" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -308,15 +370,15 @@ export default function AppUsagePage() {
         <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="overview">概览</TabsTrigger>
-            <TabsTrigger value="productive">生产型应用</TabsTrigger>
-            <TabsTrigger value="neutral">中性应用</TabsTrigger>
-            <TabsTrigger value="non_productive">非生产型应用</TabsTrigger>
+            <TabsTrigger value="productive">效率与财务</TabsTrigger>
+            <TabsTrigger value="neutral">其他</TabsTrigger>
+            <TabsTrigger value="non_productive">社交</TabsTrigger>
           </TabsList>
           
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               {/* 每日使用图表 */}
-              <Card>
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle>每日使用时间</CardTitle>
                   <CardDescription>
@@ -348,7 +410,7 @@ export default function AppUsagePage() {
               </Card>
               
               {/* 应用类别分布 */}
-              <Card>
+              <Card className="border shadow-sm">
                 <CardHeader>
                   <CardTitle>应用类别分布</CardTitle>
                   <CardDescription>
@@ -381,7 +443,7 @@ export default function AppUsagePage() {
             </div>
             
             {/* 每小时使用图表 */}
-            <Card>
+            <Card className="border shadow-sm">
               <CardHeader>
                 <CardTitle>每小时使用分布</CardTitle>
                 <CardDescription>
@@ -404,21 +466,21 @@ export default function AppUsagePage() {
                       stackId="a"
                       fill="#22c55e" 
                       radius={[0, 0, 0, 0]} 
-                      name="生产型"
+                      name="效率与财务"
                     />
                     <Bar 
                       dataKey="neutral" 
                       stackId="a"
                       fill="#3b82f6" 
                       radius={[0, 0, 0, 0]} 
-                      name="中性"
+                      name="其他"
                     />
                     <Bar 
                       dataKey="social" 
                       stackId="a"
                       fill="#ef4444" 
                       radius={[0, 0, 0, 0]} 
-                      name="非生产型"
+                      name="社交"
                     />
                     <Legend />
                   </BarChart>
@@ -429,13 +491,13 @@ export default function AppUsagePage() {
           
           {["overview", "productive", "neutral", "non_productive"].map((tab) => (
             <TabsContent key={tab} value={tab} className="space-y-4">
-              <Card>
+              <Card className="border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>
-                      {tab === "overview" ? "所有应用" :
-                       tab === "productive" ? "生产型应用" :
-                       tab === "neutral" ? "中性应用" : "非生产型应用"}
+                      {tab === "overview" ? "显示App" :
+                       tab === "productive" ? "效率与财务" :
+                       tab === "neutral" ? "其他" : "社交"}
                     </CardTitle>
                     <CardDescription>
                       {tab === "overview" ? "所有应用的使用情况" :
@@ -449,7 +511,7 @@ export default function AppUsagePage() {
                       placeholder="搜索应用..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-10 rounded-full border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-offset-0"
                     />
                     <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
                   </div>
@@ -471,17 +533,17 @@ export default function AppUsagePage() {
                           <tr key={index} className="border-b hover:bg-muted/50">
                             <td className="py-3 flex items-center">
                               {app.icon_path ? (
-                                <img src={app.icon_path} alt={app.app_name} className="w-8 h-8 mr-3 rounded" />
+                                <img src={app.icon_path} alt={app.app_name} className="w-8 h-8 mr-3 rounded-md shadow-sm" />
                               ) : (
-                                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center text-gray-500 mr-3">
+                                <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-md shadow-sm flex items-center justify-center text-gray-500 mr-3">
                                   {app.app_name.charAt(0)}
                                 </div>
                               )}
                               <div>
                                 <div className="font-medium">{app.app_name}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {app.productivity_type === "productive" ? "生产型" :
-                                   app.productivity_type === "neutral" ? "中性" : "非生产型"}
+                                  {app.productivity_type === "productive" ? "效率与财务" :
+                                   app.productivity_type === "neutral" ? "其他" : "社交"}
                                 </div>
                               </div>
                             </td>
