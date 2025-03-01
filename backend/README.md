@@ -1,8 +1,8 @@
-# TimeGlass Backend
+# TimeGlass 后端服务
 
-TimeGlass是一个用于时间追踪和上下文感知的应用程序。这个仓库包含了TimeGlass的后端服务。
+TimeGlass 是一个用于时间追踪和生产力分析的应用程序。本仓库包含 TimeGlass 的后端服务代码。
 
-## 目录结构
+## 项目结构
 
 ```
 backend/
@@ -15,10 +15,10 @@ backend/
 │       └── services/    # 业务逻辑服务
 ├── scripts/             # 脚本工具
 │   ├── es_tools.py      # Elasticsearch工具启动脚本
-│   └── run_tests.py     # 测试脚本启动器
-├── tests/               # 测试文件
-│   ├── test_api.py      # API测试
-│   └── test_data.json   # 测试数据
+│   └── run_all_tests.py # 测试脚本启动器
+├── test/                # 测试代码
+│   ├── test_api_endpoints.py  # API测试
+│   └── test_data_service_simple.py  # 数据服务测试
 ├── tools/               # 工具集
 │   └── es/              # Elasticsearch工具
 │       ├── check_es_data.py        # 查看ES数据
@@ -30,42 +30,75 @@ backend/
 ├── .env                 # 环境变量配置
 ├── .env.example         # 环境变量示例
 ├── pyproject.toml       # 项目依赖配置
-└── run.py               # 应用启动脚本
+├── pytest.ini           # Pytest配置
+└── README.md            # 项目说明
 ```
 
-## 环境配置
+## 功能
 
-1. 确保已安装Python 3.8+和Poetry
-2. 安装依赖：
-   ```bash
-   poetry install
-   ```
-3. 复制环境变量示例并修改：
-   ```bash
-   cp .env.example .env
-   ```
+- 数据报告 API：接收并处理客户端发送的数据
+- Elasticsearch 集成：存储和索引数据
+- 专门的数据提取：从原始数据中提取 OCR 文本、音频转录和 UI 监控数据
 
-## 启动服务
+## 安装
+
+1. 确保已安装 Python 3.8+ 和 Poetry
+2. 克隆仓库
+3. 安装依赖：
 
 ```bash
-poetry run python run.py
+cd backend
+poetry install
 ```
 
-或者使用Poetry shell：
+## 配置
+
+通过环境变量配置应用：
+
+- `ES_URL`: Elasticsearch URL
+- `ES_USER`: Elasticsearch 用户名
+- `ES_PWD`: Elasticsearch 密码
+- `APP_ENV`: 应用环境 (development, test, production)
+- `DEBUG`: 调试模式 (true/false)
+- `API_PREFIX`: API 前缀
+
+## 运行
 
 ```bash
+# 使用 Poetry 运行
+poetry run python -m backend.app.main
+
+# 或者激活虚拟环境后运行
 poetry shell
-python run.py
+python -m backend.app.main
 ```
 
-服务将在 http://localhost:8000 启动。
+## 测试
 
-## API文档
+使用以下命令运行测试：
 
-启动服务后，可以访问以下URL查看API文档：
+```bash
+# 运行所有测试
+python scripts/run_all_tests.py
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+# 运行测试并显示详细输出
+python scripts/run_all_tests.py -v
+
+# 运行测试并生成覆盖率报告
+python scripts/run_all_tests.py -c
+
+# 运行特定测试文件
+python scripts/run_all_tests.py test/test_api_endpoints.py
+```
+
+当前测试覆盖率为 82%。详细的测试信息请查看 [test/README.md](test/README.md)。
+
+## API 文档
+
+启动服务后，可以通过以下 URL 访问 API 文档：
+
+- Swagger UI: http://localhost:8000/api/v1/docs
+- ReDoc: http://localhost:8000/api/v1/redoc
 
 ## 工具脚本
 
@@ -95,35 +128,13 @@ poetry run python scripts/es_tools.py manage list
 
 更多ES工具的详细说明，请参考 [tools/es/README_ES_TOOLS.md](tools/es/README_ES_TOOLS.md)。
 
-### 测试脚本
-
-使用`run_tests.py`脚本可以运行各种测试：
-
-```bash
-# 查看帮助
-poetry run python scripts/run_tests.py --help
-
-# 测试API接口
-poetry run python scripts/run_tests.py api
-```
-
-## 开发
-
-### 代码风格
+## 代码风格
 
 本项目使用Black和isort进行代码格式化：
 
 ```bash
 poetry run black .
 poetry run isort .
-```
-
-### 测试
-
-运行测试：
-
-```bash
-poetry run pytest
 ```
 
 ## 数据上报API
@@ -145,4 +156,10 @@ POST /api/v1/data/report
 - `timeglass-audio-transcriptions` - 音频转录专用索引
 - `timeglass-ui-monitoring` - UI监控专用索引
 
-这种设计支持高效的全文搜索和时间序列分析。 
+这种设计支持高效的全文搜索和时间序列分析。
+
+## 开发
+
+1. 创建新分支进行开发
+2. 提交前运行测试确保代码质量
+3. 提交 Pull Request 进行代码审查 
