@@ -13,6 +13,7 @@ import { Laptop, PieChart, BarChart2, Clock, ChevronLeft, ChevronRight, Calendar
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart as RechartsPieChart, Pie, Cell } from "recharts"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 // 模拟数据
 const mockAppUsageData = {
@@ -169,9 +170,10 @@ const pieChartData = [
 const COLORS = ["#22c55e", "#3b82f6", "#ef4444"];
 
 export default function AppUsagePage() {
+  const today = new Date();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: addDays(new Date(), -6),
-    to: new Date(),
+    from: today,
+    to: today,
   })
   
   const [appUsageData, setAppUsageData] = useState(mockAppUsageData)
@@ -187,27 +189,25 @@ export default function AppUsagePage() {
 
   // 日期导航
   const handlePrevDay = () => {
-    if (dateRange?.from && dateRange?.to) {
-      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+    if (dateRange?.from) {
+      const prevDay = addDays(dateRange.from, -1);
       setDateRange({
-        from: addDays(dateRange.from, -daysDiff - 1),
-        to: addDays(dateRange.from, -1)
+        from: prevDay,
+        to: prevDay
       });
     }
   }
 
   const handleNextDay = () => {
-    if (dateRange?.from && dateRange?.to) {
-      const daysDiff = Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24));
+    if (dateRange?.from) {
+      const nextDay = addDays(dateRange.from, 1);
       const today = new Date();
-      const newFrom = addDays(dateRange.to, 1);
-      const newTo = addDays(dateRange.to, daysDiff + 1);
       
       // 不允许选择未来日期
-      if (newFrom <= today) {
+      if (nextDay <= today) {
         setDateRange({
-          from: newFrom,
-          to: newTo <= today ? newTo : today
+          from: nextDay,
+          to: nextDay
         });
       }
     }
@@ -254,45 +254,66 @@ export default function AppUsagePage() {
       <div className="flex flex-col gap-6">
         <div className="flex justify-between items-center">
           <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">应用与网站活动</h1>
+            <h1 className="text-3xl font-bold tracking-tight">应用使用分析</h1>
             <p className="text-muted-foreground">
               今天 21:05 更新
             </p>
           </div>
           
-          <div className="flex items-center gap-2 bg-muted/30 p-1 rounded-md">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handlePrevDay}
-              className="h-8 w-8 rounded-full"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            
-            <div className="flex items-center gap-1 px-2 py-1 bg-background rounded-md shadow-sm">
-              <span className="text-sm font-medium">
-                {dateRange?.from ? format(dateRange.from, "M月d日") : ""} 
-                {dateRange?.to && dateRange.from?.toDateString() !== dateRange.to.toDateString() 
-                  ? ` - ${format(dateRange.to, "M月d日")}` 
-                  : " 今天"}
-              </span>
-              <DateRangePicker
-                value={dateRange}
-                onChange={handleDateChange}
-                className="w-auto"
-              />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handlePrevDay}
+                className="h-8 w-8 rounded-full"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="relative">
+                <Select
+                  value={dateRange?.from?.toISOString()}
+                  onValueChange={(value) => {
+                    const date = new Date(value);
+                    handleDateChange({ from: date, to: date });
+                  }}
+                >
+                  <SelectTrigger className="w-[160px] h-10 border rounded-md">
+                    <SelectValue>
+                      {dateRange?.from ? (
+                        dateRange.from.toDateString() === new Date().toDateString() 
+                          ? "今天" 
+                          : format(dateRange.from, "yyyy年M月d日")
+                      ) : "选择日期"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={new Date().toISOString()}>今天</SelectItem>
+                    <SelectItem value={addDays(new Date(), -1).toISOString()}>昨天</SelectItem>
+                    <SelectItem value={addDays(new Date(), -2).toISOString()}>前天</SelectItem>
+                    <div className="px-2 py-1.5 border-t">
+                      <DateRangePicker
+                        value={dateRange}
+                        onChange={handleDateChange}
+                        className="w-auto"
+                        singleDay={true}
+                      />
+                    </div>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={handleNextDay}
+                className="h-8 w-8 rounded-full"
+                disabled={dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
-            
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleNextDay}
-              className="h-8 w-8 rounded-full"
-              disabled={dateRange?.to && dateRange.to.toDateString() === new Date().toDateString()}
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
           </div>
         </div>
         
@@ -310,7 +331,9 @@ export default function AppUsagePage() {
                 {formatTimeSpent(appUsageData.total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
-                在 {dateRange?.from && dateRange?.to ? Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0} 天内
+                {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString() 
+                  ? "今天" 
+                  : dateRange?.from ? format(dateRange.from, "yyyy年M月d日") : ""}
               </p>
             </CardContent>
           </Card>
