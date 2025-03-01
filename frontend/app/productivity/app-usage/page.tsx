@@ -8,9 +8,165 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { AppUsageChart } from "@/components/productivity/app-usage-chart"
 import { AppList } from "@/components/productivity/app-list"
-import { getAppUsage, AppUsageResponse, AppUsageItem, AppCategoryUsage } from "@/lib/api"
-import { formatTimeSpent, getProductivityColor } from "@/lib/utils"
-import { Laptop, PieChart, BarChart2, Clock } from "lucide-react"
+import { formatTimeSpent, formatPercentage } from "@/lib/utils"
+import { Laptop, PieChart, BarChart2, Clock, ChevronLeft, ChevronRight, Calendar, Search, Filter } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart as RechartsPieChart, Pie, Cell } from "recharts"
+
+// 模拟数据
+const mockAppUsageData = {
+  total_time_seconds: 28560, // 7小时56分钟
+  apps: [
+    {
+      app_name: "Cursor",
+      total_time_seconds: 19380, // 5小时23分钟
+      percentage: 67.86,
+      session_count: 12,
+      avg_session_time: 1615,
+      productivity_type: "productive",
+      icon_path: "https://cursor.sh/apple-touch-icon.png"
+    },
+    {
+      app_name: "Arc",
+      total_time_seconds: 4080, // 1小时8分钟
+      percentage: 14.29,
+      session_count: 8,
+      avg_session_time: 510,
+      productivity_type: "productive",
+      icon_path: "https://arc.net/favicon.ico"
+    },
+    {
+      app_name: "iTerm",
+      total_time_seconds: 2100, // 35分钟
+      percentage: 7.35,
+      session_count: 15,
+      avg_session_time: 140,
+      productivity_type: "productive",
+      icon_path: "https://iterm2.com/favicon.ico"
+    },
+    {
+      app_name: "DB Browser for SQLite",
+      total_time_seconds: 1080, // 18分钟
+      percentage: 3.78,
+      session_count: 3,
+      avg_session_time: 360,
+      productivity_type: "productive"
+    },
+    {
+      app_name: "Sublime Text",
+      total_time_seconds: 240, // 4分钟
+      percentage: 0.84,
+      session_count: 2,
+      avg_session_time: 120,
+      productivity_type: "productive",
+      icon_path: "https://www.sublimetext.com/favicon.ico"
+    },
+    {
+      app_name: "系统设置",
+      total_time_seconds: 120, // 2分钟
+      percentage: 0.42,
+      session_count: 1,
+      avg_session_time: 120,
+      productivity_type: "neutral"
+    },
+    {
+      app_name: "钉钉",
+      total_time_seconds: 60, // 1分钟
+      percentage: 0.21,
+      session_count: 2,
+      avg_session_time: 30,
+      productivity_type: "neutral",
+      icon_path: "https://img.alicdn.com/imgextra/i4/O1CN01XQpsmx1EUAr9NAqja_!!6000000000354-73-tps-64-64.ico"
+    },
+    {
+      app_name: "访达",
+      total_time_seconds: 60, // 1分钟
+      percentage: 0.21,
+      session_count: 3,
+      avg_session_time: 20,
+      productivity_type: "neutral"
+    },
+    {
+      app_name: "活动监视器",
+      total_time_seconds: 40, // 40秒
+      percentage: 0.14,
+      session_count: 1,
+      avg_session_time: 40,
+      productivity_type: "neutral"
+    }
+  ],
+  categories: [
+    {
+      category: "productive",
+      total_time_seconds: 26880, // 7小时7分钟
+      percentage: 94.12,
+      apps: ["Cursor", "Arc", "iTerm", "DB Browser for SQLite", "Sublime Text"]
+    },
+    {
+      category: "neutral",
+      total_time_seconds: 1380, // 23分钟
+      percentage: 4.83,
+      apps: ["系统设置", "访达", "活动监视器", "钉钉"]
+    },
+    {
+      category: "non_productive",
+      total_time_seconds: 39, // 39秒
+      percentage: 0.14,
+      apps: ["社交媒体"]
+    }
+  ]
+};
+
+// 模拟每日使用数据
+const mockDailyData = [
+  { day: "日", hours: 0 },
+  { day: "一", hours: 7.2 },
+  { day: "二", hours: 7.8 },
+  { day: "三", hours: 8.1 },
+  { day: "四", hours: 7.5 },
+  { day: "五", hours: 8.9 },
+  { day: "六", hours: 7.93 }
+];
+
+// 模拟每小时使用数据
+const mockHourlyData = Array.from({ length: 24 }, (_, i) => {
+  let minutes = 0;
+  
+  // 模拟工作时间段的使用情况
+  if (i >= 9 && i <= 18) {
+    minutes = Math.floor(Math.random() * 40) + 20;
+  } else if (i >= 19 && i <= 22) {
+    minutes = Math.floor(Math.random() * 20);
+  }
+  
+  return {
+    hour: `${i}时`,
+    productive: i >= 12 && i <= 18 ? minutes : 0,
+    neutral: i >= 9 && i <= 20 ? Math.floor(Math.random() * 5) : 0,
+    social: i >= 12 && i <= 22 ? Math.floor(Math.random() * 2) : 0
+  };
+});
+
+// 设置12-18点的数据更符合图片
+mockHourlyData[12].productive = 45;
+mockHourlyData[13].productive = 55;
+mockHourlyData[14].productive = 55;
+mockHourlyData[15].productive = 40;
+mockHourlyData[16].productive = 50;
+mockHourlyData[17].productive = 50;
+mockHourlyData[18].productive = 20;
+mockHourlyData[19].productive = 40;
+mockHourlyData[20].productive = 15;
+
+// 饼图数据
+const pieChartData = [
+  { name: "生产型应用", value: 26880, color: "#22c55e" },
+  { name: "中性应用", value: 1380, color: "#3b82f6" },
+  { name: "非生产型应用", value: 39, color: "#ef4444" }
+];
+
+const COLORS = ["#22c55e", "#3b82f6", "#ef4444"];
 
 export default function AppUsagePage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -18,74 +174,52 @@ export default function AppUsagePage() {
     to: new Date(),
   })
   
-  const [appUsageData, setAppUsageData] = useState<AppUsageResponse | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("all")
+  const [appUsageData, setAppUsageData] = useState(mockAppUsageData)
+  const [isLoading, setIsLoading] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
+  const [searchTerm, setSearchTerm] = useState("")
   
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!dateRange?.from || !dateRange?.to) return
-      
-      setIsLoading(true)
-      try {
-        const data = await getAppUsage({
-          start_date: format(dateRange.from, "yyyy-MM-dd"),
-          end_date: format(dateRange.to, "yyyy-MM-dd"),
-        })
-        setAppUsageData(data)
-      } catch (error) {
-        console.error("Error fetching app usage data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    fetchData()
-  }, [dateRange])
-  
-  // 准备饼图数据
-  const getChartData = () => {
-    if (!appUsageData) return []
-    
-    if (activeTab === "all") {
-      return appUsageData.apps.slice(0, 10).map(app => ({
-        name: app.app_name,
-        value: app.total_time_seconds,
-        percentage: app.percentage,
-        color: app.productivity_type === "productive" ? "#22c55e" :
-               app.productivity_type === "non_productive" ? "#ef4444" : "#3b82f6",
-        type: app.productivity_type
-      }))
-    } else if (activeTab === "categories") {
-      return appUsageData.categories.map(category => ({
-        name: category.category === "productive" ? "生产型" :
-              category.category === "non_productive" ? "非生产型" : 
-              category.category === "neutral" ? "中性" : category.category,
-        value: category.total_time_seconds,
-        percentage: category.percentage,
-        color: category.category === "productive" ? "#22c55e" :
-               category.category === "non_productive" ? "#ef4444" : 
-               category.category === "neutral" ? "#3b82f6" : "#94a3b8"
-      }))
-    }
-    
-    return []
+  // 模拟日期切换
+  const handleDateChange = (newDateRange: DateRange | undefined) => {
+    setDateRange(newDateRange);
+    // 在实际应用中，这里会触发数据重新加载
   }
   
   // 过滤应用列表
-  const getFilteredApps = (): AppUsageItem[] => {
+  const getFilteredApps = () => {
     if (!appUsageData) return []
     
-    if (activeTab === "productive") {
-      return appUsageData.apps.filter(app => app.productivity_type === "productive")
-    } else if (activeTab === "non_productive") {
-      return appUsageData.apps.filter(app => app.productivity_type === "non_productive")
-    } else if (activeTab === "neutral") {
-      return appUsageData.apps.filter(app => app.productivity_type === "neutral")
+    let filtered = appUsageData.apps;
+    
+    if (searchTerm) {
+      filtered = filtered.filter(app => 
+        app.app_name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
     }
     
-    return appUsageData.apps
+    if (activeTab === "productive") {
+      filtered = filtered.filter(app => app.productivity_type === "productive")
+    } else if (activeTab === "non_productive") {
+      filtered = filtered.filter(app => app.productivity_type === "non_productive")
+    } else if (activeTab === "neutral") {
+      filtered = filtered.filter(app => app.productivity_type === "neutral")
+    }
+    
+    return filtered;
   }
+  
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border rounded-md shadow-md">
+          <p className="font-medium">{payload[0].name}</p>
+          <p className="text-sm">使用时间: {formatTimeSpent(payload[0].value)}</p>
+          <p className="text-sm">占比: {formatPercentage(payload[0].value, appUsageData.total_time_seconds)}</p>
+        </div>
+      );
+    }
+    return null;
+  };
   
   return (
     <div className="container py-8">
@@ -93,28 +227,31 @@ export default function AppUsagePage() {
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold tracking-tight">应用使用分析</h1>
           <p className="text-muted-foreground">
-            分析您使用的应用程序和工具
+            分析员工使用的应用程序和工具，优化软件资源配置
           </p>
         </div>
         
         <div className="flex justify-between items-center">
           <DateRangePicker
             value={dateRange}
-            onChange={setDateRange}
+            onChange={handleDateChange}
             className="w-[300px]"
           />
+          <div className="text-sm text-muted-foreground">
+            最后更新: 今天 21:05
+          </div>
         </div>
         
         {/* 概览统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">总使用时间</CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <Clock className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? "加载中..." : formatTimeSpent(appUsageData?.total_time_seconds || 0)}
+                {formatTimeSpent(appUsageData.total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
                 在 {dateRange?.from && dateRange?.to ? Math.round((dateRange.to.getTime() - dateRange.from.getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0} 天内
@@ -122,204 +259,254 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">使用的应用</CardTitle>
-              <Laptop className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">生产型应用时间</CardTitle>
+              <BarChart2 className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? "加载中..." : appUsageData?.apps.length || 0}
+                {formatTimeSpent(appUsageData.categories[0].total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
-                不同的应用程序
+                占总时间的 {Math.round(appUsageData.categories[0].percentage)}%
               </p>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">生产型应用</CardTitle>
-              <BarChart2 className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">中性应用时间</CardTitle>
+              <PieChart className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? "加载中..." : appUsageData?.apps.filter(app => app.productivity_type === "productive").length || 0}
+                {formatTimeSpent(appUsageData.categories[1].total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
-                占总应用的 {isLoading ? "..." : Math.round(((appUsageData?.apps.filter(app => app.productivity_type === "productive").length || 0) / (appUsageData?.apps.length || 1)) * 100)}%
+                占总时间的 {Math.round(appUsageData.categories[1].percentage)}%
               </p>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">应用类别</CardTitle>
-              <PieChart className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">非生产型应用时间</CardTitle>
+              <Clock className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {isLoading ? "加载中..." : appUsageData?.categories.length || 0}
+                {formatTimeSpent(appUsageData.categories[2].total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
-                不同的应用类别
+                占总时间的 {Math.round(appUsageData.categories[2].percentage)}%
               </p>
             </CardContent>
           </Card>
         </div>
         
-        <Tabs defaultValue="all" className="space-y-4" onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">所有应用</TabsTrigger>
-            <TabsTrigger value="categories">应用类别</TabsTrigger>
-            <TabsTrigger value="productive">生产型</TabsTrigger>
-            <TabsTrigger value="non_productive">非生产型</TabsTrigger>
-            <TabsTrigger value="neutral">中性</TabsTrigger>
+        <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+            <TabsTrigger value="overview">概览</TabsTrigger>
+            <TabsTrigger value="productive">生产型应用</TabsTrigger>
+            <TabsTrigger value="neutral">中性应用</TabsTrigger>
+            <TabsTrigger value="non_productive">非生产型应用</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="all" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>应用使用分布</CardTitle>
-                <CardDescription>
-                  查看各应用使用时间占比
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-1/2">
-                  {isLoading ? (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>加载中...</p>
-                    </div>
-                  ) : appUsageData?.apps.length ? (
-                    <AppUsageChart 
-                      data={getChartData()} 
-                      totalTime={appUsageData.total_time_seconds} 
-                    />
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>暂无数据</p>
-                    </div>
-                  )}
-                </div>
-                <div className="w-full md:w-1/2">
-                  {isLoading ? (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>加载中...</p>
-                    </div>
-                  ) : appUsageData?.apps.length ? (
-                    <AppList 
-                      apps={getFilteredApps().slice(0, 10)} 
-                      totalTime={appUsageData.total_time_seconds} 
-                    />
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>暂无数据</p>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="categories" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>应用类别分布</CardTitle>
-                <CardDescription>
-                  查看不同类别应用的使用时间占比
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col md:flex-row gap-6">
-                <div className="w-full md:w-1/2">
-                  {isLoading ? (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>加载中...</p>
-                    </div>
-                  ) : appUsageData?.categories.length ? (
-                    <AppUsageChart 
-                      data={getChartData()} 
-                      totalTime={appUsageData.total_time_seconds} 
-                    />
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>暂无数据</p>
-                    </div>
-                  )}
-                </div>
-                <div className="w-full md:w-1/2">
-                  <div className="space-y-4">
-                    {isLoading ? (
-                      <div className="h-[300px] flex items-center justify-center">
-                        <p>加载中...</p>
-                      </div>
-                    ) : appUsageData?.categories.length ? (
-                      appUsageData.categories.map((category, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center">
-                              <div className={`w-3 h-3 rounded-full mr-2 ${
-                                category.category === "productive" ? "bg-green-500" :
-                                category.category === "non_productive" ? "bg-red-500" :
-                                category.category === "neutral" ? "bg-blue-500" : "bg-gray-500"
-                              }`} />
-                              <h4 className="font-medium">
-                                {category.category === "productive" ? "生产型" :
-                                 category.category === "non_productive" ? "非生产型" :
-                                 category.category === "neutral" ? "中性" : category.category}
-                              </h4>
-                            </div>
-                            <span className="font-medium">
-                              {formatTimeSpent(category.total_time_seconds)}
-                            </span>
-                          </div>
-                          <div className="mt-2">
-                            <div className="text-xs text-gray-500">
-                              包含 {category.apps.length} 个应用，占总时间的 {Math.round(category.percentage)}%
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="h-[300px] flex items-center justify-center">
-                        <p>暂无数据</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          {["productive", "non_productive", "neutral"].map((type) => (
-            <TabsContent key={type} value={type} className="space-y-4">
+          <TabsContent value="overview" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* 每日使用图表 */}
               <Card>
                 <CardHeader>
-                  <CardTitle>
-                    {type === "productive" ? "生产型应用" :
-                     type === "non_productive" ? "非生产型应用" : "中性应用"}
-                  </CardTitle>
+                  <CardTitle>每日使用时间</CardTitle>
                   <CardDescription>
-                    查看{type === "productive" ? "生产型" :
-                         type === "non_productive" ? "非生产型" : "中性"}应用的使用情况
+                    过去一周的应用使用时间分布
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {isLoading ? (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>加载中...</p>
-                    </div>
-                  ) : getFilteredApps().length ? (
-                    <AppList 
-                      apps={getFilteredApps()} 
-                      totalTime={appUsageData?.total_time_seconds || 0}
-                      showCategory={false}
+                  <ResponsiveContainer width="100%" height={250}>
+                    <BarChart data={mockDailyData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                      <XAxis dataKey="day" />
+                      <YAxis 
+                        orientation="right" 
+                        label={{ value: '小时', position: 'top', offset: 10 }} 
+                        domain={[0, 12]}
+                      />
+                      <Tooltip formatter={(value) => [`${value}小时`, '使用时间']} />
+                      <Bar 
+                        dataKey="hours" 
+                        fill="#3b82f6" 
+                        radius={[4, 4, 0, 0]} 
+                        barSize={30}
+                        name="使用时间"
+                      />
+                      <Legend />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+              
+              {/* 应用类别分布 */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>应用类别分布</CardTitle>
+                  <CardDescription>
+                    按生产力类型划分的使用时间
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <RechartsPieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {pieChartData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                    </RechartsPieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </div>
+            
+            {/* 每小时使用图表 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>每小时使用分布</CardTitle>
+                <CardDescription>
+                  一天中不同时段的应用使用情况
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={mockHourlyData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="hour" />
+                    <YAxis 
+                      orientation="right" 
+                      label={{ value: '分钟', position: 'top', offset: 10 }} 
+                      domain={[0, 60]}
                     />
-                  ) : (
-                    <div className="h-[300px] flex items-center justify-center">
-                      <p>暂无数据</p>
-                    </div>
-                  )}
+                    <Tooltip formatter={(value) => [`${value}分钟`, '使用时间']} />
+                    <Bar 
+                      dataKey="productive" 
+                      stackId="a"
+                      fill="#22c55e" 
+                      radius={[0, 0, 0, 0]} 
+                      name="生产型"
+                    />
+                    <Bar 
+                      dataKey="neutral" 
+                      stackId="a"
+                      fill="#3b82f6" 
+                      radius={[0, 0, 0, 0]} 
+                      name="中性"
+                    />
+                    <Bar 
+                      dataKey="social" 
+                      stackId="a"
+                      fill="#ef4444" 
+                      radius={[0, 0, 0, 0]} 
+                      name="非生产型"
+                    />
+                    <Legend />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {["overview", "productive", "neutral", "non_productive"].map((tab) => (
+            <TabsContent key={tab} value={tab} className="space-y-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>
+                      {tab === "overview" ? "所有应用" :
+                       tab === "productive" ? "生产型应用" :
+                       tab === "neutral" ? "中性应用" : "非生产型应用"}
+                    </CardTitle>
+                    <CardDescription>
+                      {tab === "overview" ? "所有应用的使用情况" :
+                       tab === "productive" ? "提高工作效率的应用" :
+                       tab === "neutral" ? "工作辅助类应用" : "可能分散注意力的应用"}
+                    </CardDescription>
+                  </div>
+                  <div className="relative w-64">
+                    <Input
+                      type="text"
+                      placeholder="搜索应用..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-3 font-medium">应用</th>
+                          <th className="text-left py-3 font-medium">使用时间</th>
+                          <th className="text-left py-3 font-medium">占比</th>
+                          <th className="text-left py-3 font-medium">会话数</th>
+                          <th className="text-left py-3 font-medium">平均会话时长</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {getFilteredApps().map((app, index) => (
+                          <tr key={index} className="border-b hover:bg-muted/50">
+                            <td className="py-3 flex items-center">
+                              {app.icon_path ? (
+                                <img src={app.icon_path} alt={app.app_name} className="w-8 h-8 mr-3 rounded" />
+                              ) : (
+                                <div className="w-8 h-8 bg-gray-200 rounded flex items-center justify-center text-gray-500 mr-3">
+                                  {app.app_name.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-medium">{app.app_name}</div>
+                                <div className="text-xs text-muted-foreground">
+                                  {app.productivity_type === "productive" ? "生产型" :
+                                   app.productivity_type === "neutral" ? "中性" : "非生产型"}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 font-medium">{formatTimeSpent(app.total_time_seconds)}</td>
+                            <td className="py-3">
+                              <div className="flex items-center">
+                                <div className="w-16 h-2 bg-gray-100 rounded-full mr-2">
+                                  <div 
+                                    className={`h-full rounded-full ${
+                                      app.productivity_type === "productive" ? "bg-green-500" :
+                                      app.productivity_type === "non_productive" ? "bg-red-500" : "bg-blue-500"
+                                    }`}
+                                    style={{ width: `${app.percentage}%` }}
+                                  />
+                                </div>
+                                <span>{app.percentage.toFixed(1)}%</span>
+                              </div>
+                            </td>
+                            <td className="py-3">{app.session_count}</td>
+                            <td className="py-3">{formatTimeSpent(app.avg_session_time)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

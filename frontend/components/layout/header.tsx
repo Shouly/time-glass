@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Clock, BarChart2, Award, Menu, Monitor } from "lucide-react";
+import { BarChart2, Menu, Monitor } from "lucide-react";
 
 export function Header() {
   const pathname = usePathname() || "";
@@ -21,15 +21,7 @@ export function Header() {
   const navItems = [
     { href: "/", label: "首页" },
     { href: "/dashboard", label: "仪表盘" },
-    { 
-      href: "/productivity", 
-      label: "生产力分析",
-      children: [
-        { href: "/productivity/time-analysis", label: "工作时间分析", icon: <Clock className="mr-2 h-4 w-4" /> },
-        { href: "/productivity/app-usage", label: "应用使用分析", icon: <BarChart2 className="mr-2 h-4 w-4" /> },
-        { href: "/productivity/score", label: "生产力评分", icon: <Award className="mr-2 h-4 w-4" /> },
-      ]
-    },
+    { href: "/productivity/app-usage", label: "应用使用分析", icon: <BarChart2 className="mr-2 h-4 w-4" /> },
     { href: "/ui-monitoring", label: "UI监控", icon: <Monitor className="mr-2 h-4 w-4" /> },
     { href: "/about", label: "关于" },
   ];
@@ -45,40 +37,17 @@ export function Header() {
         
         <div className="hidden md:flex">
           <nav className="flex items-center space-x-6 text-sm font-medium">
-            {navItems.map((item) => 
-              item.children ? (
-                <DropdownMenu key={item.href}>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant={isActive(item.href) ? "default" : "ghost"} 
-                      className="h-8"
-                    >
-                      {item.label}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start">
-                    {item.children.map((child) => (
-                      <DropdownMenuItem key={child.href} asChild>
-                        <Link href={child.href} className="flex items-center">
-                          {child.icon}
-                          {child.label}
-                        </Link>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`transition-colors hover:text-foreground/80 ${
-                    isActive(item.href) ? "text-foreground" : "text-foreground/60"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              )
-            )}
+            {navItems.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`transition-colors hover:text-foreground/80 ${
+                  isActive(item.href) ? "text-foreground" : "text-foreground/60"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
           </nav>
         </div>
         
@@ -91,25 +60,14 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              {navItems.map((item) => 
-                item.children ? (
-                  item.children.map((child) => (
-                    <DropdownMenuItem key={child.href} asChild>
-                      <Link href={child.href} className="flex items-center">
-                        {child.icon}
-                        {child.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))
-                ) : (
-                  <DropdownMenuItem key={item.href} asChild>
-                    <Link href={item.href}>
-                      {item.icon && item.icon}
-                      {item.label}
-                    </Link>
-                  </DropdownMenuItem>
-                )
-              )}
+              {navItems.map((item) => (
+                <DropdownMenuItem key={item.href} asChild>
+                  <Link href={item.href}>
+                    {item.icon && item.icon}
+                    {item.label}
+                  </Link>
+                </DropdownMenuItem>
+              ))}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

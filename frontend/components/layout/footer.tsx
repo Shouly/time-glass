@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { BarChart2, Users, Monitor } from "lucide-react";
 
 export function Footer() {
   return (
@@ -11,17 +11,17 @@ export function Footer() {
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-                <Clock className="h-4 w-4 text-primary" />
+                <BarChart2 className="h-4 w-4 text-primary" />
               </div>
-              <span className="font-bold">Time Glass</span>
+              <span className="font-bold">员工生产力分析平台</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              智能时间管理与分析平台，帮助您更高效地利用每一分钟
+              全面监控、深入分析、优化员工工作效率，提升企业整体生产力
             </p>
           </div>
           
           <div>
-            <h3 className="mb-4 text-sm font-medium">产品</h3>
+            <h3 className="mb-4 text-sm font-medium">分析功能</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
                 <Link href="/dashboard" className="transition-colors hover:text-primary">
@@ -29,18 +29,13 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/productivity/app-usage" className="transition-colors hover:text-primary">
+                  应用使用分析
+                </Link>
+              </li>
+              <li>
                 <Link href="/ui-monitoring" className="transition-colors hover:text-primary">
                   UI监控
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="transition-colors hover:text-primary">
-                  数据分析
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="transition-colors hover:text-primary">
-                  团队版
                 </Link>
               </li>
             </ul>
@@ -56,7 +51,12 @@ export function Footer() {
               </li>
               <li>
                 <Link href="#" className="transition-colors hover:text-primary">
-                  使用指南
+                  最佳实践
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="transition-colors hover:text-primary">
+                  案例研究
                 </Link>
               </li>
               <li>
@@ -76,18 +76,23 @@ export function Footer() {
             <h3 className="mb-4 text-sm font-medium">联系我们</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li>
-                <a href="mailto:contact@timeglass.app" className="transition-colors hover:text-primary">
-                  contact@timeglass.app
+                <a href="mailto:contact@productivity-platform.com" className="transition-colors hover:text-primary">
+                  contact@productivity-platform.com
                 </a>
               </li>
               <li>
                 <Link href="#" className="transition-colors hover:text-primary">
-                  反馈建议
+                  预约演示
                 </Link>
               </li>
               <li>
                 <Link href="#" className="transition-colors hover:text-primary">
-                  支持中心
+                  技术支持
+                </Link>
+              </li>
+              <li>
+                <Link href="#" className="transition-colors hover:text-primary">
+                  合作咨询
                 </Link>
               </li>
             </ul>
@@ -96,7 +101,7 @@ export function Footer() {
         
         <div className="mt-8 border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Time Glass. 保留所有权利。
+            &copy; {new Date().getFullYear()} 员工生产力分析平台. 保留所有权利。
           </p>
           <div className="flex gap-4 text-xs text-muted-foreground">
             <Link href="#" className="transition-colors hover:text-primary">
@@ -106,7 +111,7 @@ export function Footer() {
               服务条款
             </Link>
             <Link href="#" className="transition-colors hover:text-primary">
-              Cookie 政策
+              数据安全
             </Link>
           </div>
         </div>
