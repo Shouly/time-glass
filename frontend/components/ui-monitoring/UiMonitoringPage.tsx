@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { UiMonitoringFilter } from './UiMonitoringFilter';
 import { UiMonitoringList } from './UiMonitoringList';
 import { getUiMonitoring, UiMonitoringItem, UiMonitoringQueryParams } from '@/lib/api';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface UiMonitoringPageProps {
   clientId?: string;
@@ -13,6 +15,7 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
   const [totalItems, setTotalItems] = useState<number>(0);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState<UiMonitoringQueryParams>({
     client_id: clientId,
     page: 1,
@@ -23,9 +26,16 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
     loadData();
   }, [filters]);
 
+  useEffect(() => {
+    if (clientId !== filters.client_id) {
+      setFilters(prev => ({ ...prev, client_id: clientId, page: 1 }));
+    }
+  }, [clientId]);
+
   const loadData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await getUiMonitoring({
         ...filters,
         page: currentPage,
@@ -35,6 +45,9 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
       setTotalItems(response.total);
     } catch (error) {
       console.error('Error loading UI monitoring data:', error);
+      setError('加载数据时出错，请稍后重试');
+      setItems([]);
+      setTotalItems(0);
     } finally {
       setLoading(false);
     }
@@ -58,12 +71,18 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
 
   return (
     <div className="space-y-6">
-      <div>
-        <UiMonitoringFilter 
-          clientId={clientId} 
-          onFilterChange={handleFilterChange} 
-        />
-      </div>
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>错误</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <UiMonitoringFilter 
+        clientId={clientId} 
+        onFilterChange={handleFilterChange} 
+      />
       
       <UiMonitoringList 
         items={items}
