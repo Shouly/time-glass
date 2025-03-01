@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
+import { Header } from "@/components/layout/header";
+import { Footer } from "@/components/layout/footer";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,20 +18,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="zh-CN">
-      <body className={inter.className}>
-        <header className="border-b">
-          <div className="container flex h-16 items-center justify-between">
-            <div className="font-bold text-xl">Time Glass</div>
-            <nav className="flex items-center gap-4">
-              <a href="/" className="text-sm font-medium hover:underline">首页</a>
-              <a href="/dashboard" className="text-sm font-medium hover:underline">仪表盘</a>
-              <a href="/ui-monitoring" className="text-sm font-medium hover:underline">UI监控</a>
-              <a href="/about" className="text-sm font-medium hover:underline">关于</a>
-            </nav>
-          </div>
-        </header>
-        {children}
+    <html lang="zh-CN" className="scroll-smooth">
+      <body className={`${inter.className} min-h-screen flex flex-col`}>
+        <Header />
+        <main className="flex-1">
+          {children}
+        </main>
+        <Footer />
         <Toaster />
       </body>
     </html>
