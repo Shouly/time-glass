@@ -1,96 +1,117 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-
-const navItems = [
-  { href: "/", label: "首页" },
-  { href: "/dashboard", label: "仪表盘" },
-  { href: "/ui-monitoring", label: "UI监控" },
-  { href: "/about", label: "关于" }
-];
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Clock, BarChart2, Award, Menu, Monitor } from "lucide-react";
 
 export function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-
+  const pathname = usePathname() || "";
+  
+  const isActive = (path: string) => {
+    return pathname === path || pathname.startsWith(`${path}/`);
+  };
+  
+  const navItems = [
+    { href: "/", label: "首页" },
+    { href: "/dashboard", label: "仪表盘" },
+    { 
+      href: "/productivity", 
+      label: "生产力分析",
+      children: [
+        { href: "/productivity/time-analysis", label: "工作时间分析", icon: <Clock className="mr-2 h-4 w-4" /> },
+        { href: "/productivity/app-usage", label: "应用使用分析", icon: <BarChart2 className="mr-2 h-4 w-4" /> },
+        { href: "/productivity/score", label: "生产力评分", icon: <Award className="mr-2 h-4 w-4" /> },
+      ]
+    },
+    { href: "/ui-monitoring", label: "UI监控", icon: <Monitor className="mr-2 h-4 w-4" /> },
+    { href: "/about", label: "关于" },
+  ];
+  
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container flex h-16 items-center">
-        <div className="flex flex-1 items-center justify-between">
+      <div className="container flex h-14 items-center justify-between">
+        <div className="flex">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-              <Clock className="h-4 w-4 text-primary" />
-            </div>
-            <span className="hidden font-bold sm:inline-block">Time Glass</span>
+            <span className="font-bold text-xl">Time Glass</span>
           </Link>
-          
-          <nav className="hidden md:flex md:gap-6">
-            {navItems.map((item, index) => (
-              <Link
-                key={index}
-                href={item.href}
-                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-          
-          <div className="flex md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Toggle Menu"
-              className="mr-2"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Menu</span>
-            </Button>
-          </div>
         </div>
-      </div>
-      
-      {/* Mobile Menu */}
-      <div
-        className={cn(
-          "fixed inset-0 z-50 bg-background md:hidden",
-          mobileMenuOpen ? "flex flex-col" : "hidden"
-        )}
-      >
-        <div className="flex items-center justify-between border-b px-4 py-4">
-          <Link href="/" className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
-              <Clock className="h-4 w-4 text-primary" />
-            </div>
-            <span className="font-bold">Time Glass</span>
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="Close Menu"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <X className="h-5 w-5" />
-            <span className="sr-only">Close Menu</span>
-          </Button>
-        </div>
-        <div className="flex-1 overflow-auto py-6">
-          <nav className="flex flex-col space-y-6 px-6">
-            {navItems.map((item, index) => (
-              <Link
-                key={index}
-                href={item.href}
-                className="text-lg font-medium text-muted-foreground transition-colors hover:text-primary"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
+        
+        <div className="hidden md:flex">
+          <nav className="flex items-center space-x-6 text-sm font-medium">
+            {navItems.map((item) => 
+              item.children ? (
+                <DropdownMenu key={item.href}>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant={isActive(item.href) ? "default" : "ghost"} 
+                      className="h-8"
+                    >
+                      {item.label}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    {item.children.map((child) => (
+                      <DropdownMenuItem key={child.href} asChild>
+                        <Link href={child.href} className="flex items-center">
+                          {child.icon}
+                          {child.label}
+                        </Link>
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`transition-colors hover:text-foreground/80 ${
+                    isActive(item.href) ? "text-foreground" : "text-foreground/60"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
           </nav>
+        </div>
+        
+        <div className="md:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">打开菜单</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {navItems.map((item) => 
+                item.children ? (
+                  item.children.map((child) => (
+                    <DropdownMenuItem key={child.href} asChild>
+                      <Link href={child.href} className="flex items-center">
+                        {child.icon}
+                        {child.label}
+                      </Link>
+                    </DropdownMenuItem>
+                  ))
+                ) : (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link href={item.href}>
+                      {item.icon && item.icon}
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                )
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
     </header>
