@@ -24,6 +24,7 @@ export default function RootLayout({
             <nav className="flex items-center gap-4">
               <a href="/" className="text-sm font-medium hover:underline">首页</a>
               <a href="/dashboard" className="text-sm font-medium hover:underline">仪表盘</a>
+              <a href="/ui-monitoring" className="text-sm font-medium hover:underline">UI监控</a>
               <a href="/about" className="text-sm font-medium hover:underline">关于</a>
             </nav>
           </div>
