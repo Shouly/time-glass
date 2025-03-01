@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { UiMonitoringFilter } from './UiMonitoringFilter';
 import { UiMonitoringList } from './UiMonitoringList';
@@ -7,9 +9,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface UiMonitoringPageProps {
   clientId?: string;
+  onClientIdChange?: (clientId: string) => void;
 }
 
-export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) => {
+export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ 
+  clientId,
+  onClientIdChange
+}) => {
   const [loading, setLoading] = useState<boolean>(false);
   const [items, setItems] = useState<UiMonitoringItem[]>([]);
   const [totalItems, setTotalItems] = useState<number>(0);
@@ -81,6 +87,7 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
       
       <UiMonitoringFilter 
         clientId={clientId} 
+        onClientIdChange={onClientIdChange}
         onFilterChange={handleFilterChange} 
       />
       
