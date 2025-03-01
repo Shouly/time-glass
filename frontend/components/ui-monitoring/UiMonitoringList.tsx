@@ -2,19 +2,19 @@ import React from 'react';
 import { 
   Card, 
   CardContent, 
-  Typography, 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableContainer, 
-  TableHead, 
-  TableRow, 
-  Paper, 
-  Chip, 
-  CircularProgress, 
-  Box,
-  TablePagination
-} from '@mui/material';
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { UiMonitoringItem } from '@/lib/api';
 
@@ -50,89 +50,116 @@ export const UiMonitoringList: React.FC<UiMonitoringListProps> = ({
     return text.length > maxLength ? `${text.substring(0, maxLength)}...` : text;
   };
 
-  const handleChangePage = (
-    event: React.MouseEvent<HTMLButtonElement> | null,
-    newPage: number,
-  ) => {
-    onPageChange(newPage + 1); // Convert to 1-indexed for API
+  const handlePreviousPage = () => {
+    if (currentPage > 1) {
+      onPageChange(currentPage - 1);
+    }
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    onPageSizeChange(parseInt(event.target.value, 10));
+  const handleNextPage = () => {
+    const totalPages = Math.ceil(total / pageSize);
+    if (currentPage < totalPages) {
+      onPageChange(currentPage + 1);
+    }
   };
 
+  const pageSizeOptions = [5, 10, 25, 50];
+  
   return (
     <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle>UI Monitoring Data</CardTitle>
+          <CardDescription>Total: {total} items</CardDescription>
+        </div>
+      </CardHeader>
       <CardContent>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h6" component="div">
-            UI Monitoring Data
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Total: {total} items
-          </Typography>
-        </Box>
-
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          </div>
         ) : items.length === 0 ? (
-          <Box sx={{ textAlign: 'center', p: 3 }}>
-            <Typography variant="body1" color="text.secondary">
-              No data found
-            </Typography>
-          </Box>
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">No data found</p>
+          </div>
         ) : (
           <>
-            <TableContainer component={Paper} sx={{ maxHeight: 600 }}>
-              <Table stickyHeader aria-label="ui monitoring table">
-                <TableHead>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell>Timestamp</TableCell>
-                    <TableCell>Application</TableCell>
-                    <TableCell>Window</TableCell>
-                    <TableCell>Text</TableCell>
-                    <TableCell>Text Length</TableCell>
-                    <TableCell>Client ID</TableCell>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>Application</TableHead>
+                    <TableHead>Window</TableHead>
+                    <TableHead className="max-w-[300px]">Text</TableHead>
+                    <TableHead>Text Length</TableHead>
+                    <TableHead>Client ID</TableHead>
                   </TableRow>
-                </TableHead>
+                </TableHeader>
                 <TableBody>
                   {items.map((item, index) => (
-                    <TableRow key={index} hover>
+                    <TableRow key={index}>
                       <TableCell>{formatDate(item.timestamp)}</TableCell>
                       <TableCell>
-                        <Chip label={item.app} size="small" color="primary" />
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                          {item.app}
+                        </span>
                       </TableCell>
                       <TableCell>{item.window}</TableCell>
-                      <TableCell>
-                        <Typography variant="body2" sx={{ maxWidth: 300 }}>
-                          {truncateText(item.text)}
-                        </Typography>
+                      <TableCell className="max-w-[300px] truncate">
+                        {truncateText(item.text)}
                       </TableCell>
                       <TableCell>{item.text_length}</TableCell>
                       <TableCell>
-                        <Typography variant="body2" sx={{ maxWidth: 150, fontFamily: 'monospace' }}>
+                        <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs">
                           {truncateText(item.client_id, 20)}
-                        </Typography>
+                        </code>
                       </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            </TableContainer>
+            </div>
             
-            <TablePagination
-              component="div"
-              count={total}
-              page={currentPage - 1} // Convert from 1-indexed to 0-indexed
-              onPageChange={handleChangePage}
-              rowsPerPage={pageSize}
-              onRowsPerPageChange={handleChangeRowsPerPage}
-              rowsPerPageOptions={[5, 10, 25, 50]}
-            />
+            <div className="flex items-center justify-between space-x-2 py-4">
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">Rows per page</p>
+                <select
+                  className="h-8 w-16 rounded-md border border-input bg-background px-2 text-xs"
+                  value={pageSize}
+                  onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                >
+                  {pageSizeOptions.map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-center space-x-2">
+                <p className="text-sm font-medium">
+                  Page {currentPage} of {Math.max(1, Math.ceil(total / pageSize))}
+                </p>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousPage}
+                    disabled={currentPage <= 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextPage}
+                    disabled={currentPage >= Math.ceil(total / pageSize)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            </div>
           </>
         )}
       </CardContent>

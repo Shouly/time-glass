@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Box, Typography } from '@mui/material';
 import { UiMonitoringFilter } from './UiMonitoringFilter';
 import { UiMonitoringList } from './UiMonitoringList';
 import { getUiMonitoring, UiMonitoringItem, UiMonitoringQueryParams } from '@/lib/api';
@@ -58,30 +57,24 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ clientId }) 
   };
 
   return (
-    <Container maxWidth="xl">
-      <Box sx={{ my: 4 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
-          UI Monitoring
-        </Typography>
-        
-        <Box sx={{ mb: 3 }}>
-          <UiMonitoringFilter 
-            clientId={clientId} 
-            onFilterChange={handleFilterChange} 
-          />
-        </Box>
-        
-        <UiMonitoringList 
-          items={items}
-          total={totalItems}
-          currentPage={currentPage}
-          pageSize={pageSize}
-          loading={loading}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+    <div className="space-y-6">
+      <div>
+        <UiMonitoringFilter 
+          clientId={clientId} 
+          onFilterChange={handleFilterChange} 
         />
-      </Box>
-    </Container>
+      </div>
+      
+      <UiMonitoringList 
+        items={items}
+        total={totalItems}
+        currentPage={currentPage}
+        pageSize={pageSize}
+        loading={loading}
+        onPageChange={handlePageChange}
+        onPageSizeChange={handlePageSizeChange}
+      />
+    </div>
   );
 };
 

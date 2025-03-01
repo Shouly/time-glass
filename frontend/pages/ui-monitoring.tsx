@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import Head from 'next/head';
-import { Box, Container, TextField, Button, Typography, Paper } from '@mui/material';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import UiMonitoringPage from '@/components/ui-monitoring/UiMonitoringPage';
 
 export default function UiMonitoringPageWrapper() {
@@ -28,55 +30,52 @@ export default function UiMonitoringPageWrapper() {
         <meta name="description" content="Monitor UI interactions across applications" />
       </Head>
       
-      <Container maxWidth="xl">
-        <Box sx={{ my: 4 }}>
-          <Typography variant="h3" component="h1" gutterBottom>
-            UI Monitoring Dashboard
-          </Typography>
-          
-          <Paper sx={{ p: 3, mb: 4 }}>
+      <div className="container py-10 max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold tracking-tight mb-6">
+          UI Monitoring Dashboard
+        </h1>
+        
+        <Card className="mb-8">
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                <TextField
-                  label="Client ID"
-                  variant="outlined"
-                  value={clientId}
-                  onChange={handleClientIdChange}
-                  placeholder="Enter client ID to filter data"
-                  sx={{ flexGrow: 1, minWidth: '250px' }}
-                />
-                <Box sx={{ display: 'flex', gap: 1 }}>
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex-1 min-w-[250px]">
+                  <Input
+                    placeholder="Enter client ID to filter data"
+                    value={clientId}
+                    onChange={handleClientIdChange}
+                  />
+                </div>
+                <div className="flex gap-2">
                   <Button 
                     type="submit" 
-                    variant="contained" 
-                    color="primary"
                     disabled={!clientId.trim()}
                   >
                     Apply
                   </Button>
                   <Button 
-                    variant="outlined" 
+                    variant="outline" 
                     onClick={handleClear}
                     disabled={!clientId && !activeClientId}
                   >
                     Clear
                   </Button>
-                </Box>
-              </Box>
+                </div>
+              </div>
             </form>
             
             {activeClientId && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Filtering by Client ID: <code>{activeClientId}</code>
-                </Typography>
-              </Box>
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground">
+                  Filtering by Client ID: <code className="relative rounded bg-muted px-[0.3rem] py-[0.2rem] font-mono text-xs">{activeClientId}</code>
+                </p>
+              </div>
             )}
-          </Paper>
-          
-          <UiMonitoringPage clientId={activeClientId} />
-        </Box>
-      </Container>
+          </CardContent>
+        </Card>
+        
+        <UiMonitoringPage clientId={activeClientId} />
+      </div>
     </>
   );
 } 

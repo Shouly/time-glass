@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Grid, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  Button, 
-  TextField,
-  Box,
-  SelectChangeEvent
-} from '@mui/material';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { DatePicker } from '@/components/ui/date-picker';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { getUiMonitoringApps, getUiMonitoringWindows, UiMonitoringQueryParams } from '@/lib/api';
 
 interface UiMonitoringFilterProps {
@@ -25,10 +23,10 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
 }) => {
   const [apps, setApps] = useState<string[]>([]);
   const [windows, setWindows] = useState<string[]>([]);
-  const [selectedApp, setSelectedApp] = useState<string>('');
-  const [selectedWindow, setSelectedWindow] = useState<string>('');
-  const [startDate, setStartDate] = useState<string>('');
-  const [endDate, setEndDate] = useState<string>('');
+  const [selectedApp, setSelectedApp] = useState<string>('all');
+  const [selectedWindow, setSelectedWindow] = useState<string>('all');
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
@@ -36,11 +34,11 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
   }, [clientId]);
 
   useEffect(() => {
-    if (selectedApp) {
+    if (selectedApp && selectedApp !== 'all') {
       loadWindows();
     } else {
       setWindows([]);
-      setSelectedWindow('');
+      setSelectedWindow('all');
     }
   }, [selectedApp, clientId]);
 
@@ -59,7 +57,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
   const loadWindows = async () => {
     try {
       setLoading(true);
-      const windowsList = await getUiMonitoringWindows(clientId, selectedApp);
+      const windowsList = await getUiMonitoringWindows(clientId, selectedApp !== 'all' ? selectedApp : undefined);
       setWindows(windowsList);
     } catch (error) {
       console.error('Error loading windows:', error);
@@ -68,139 +66,112 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
     }
   };
 
-  const handleAppChange = (event: SelectChangeEvent) => {
-    setSelectedApp(event.target.value);
+  const handleAppChange = (value: string) => {
+    setSelectedApp(value);
   };
 
-  const handleWindowChange = (event: SelectChangeEvent) => {
-    setSelectedWindow(event.target.value);
-  };
-
-  const handleStartDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setStartDate(event.target.value);
-  };
-
-  const handleEndDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(event.target.value);
+  const handleWindowChange = (value: string) => {
+    setSelectedWindow(value);
   };
 
   const applyFilters = () => {
     const filters: UiMonitoringQueryParams = {
       client_id: clientId,
-      app: selectedApp || undefined,
-      window: selectedWindow || undefined,
-      startTime: startDate ? new Date(startDate).toISOString() : undefined,
-      endTime: endDate ? new Date(endDate).toISOString() : undefined
+      app: selectedApp !== 'all' ? selectedApp : undefined,
+      window: selectedWindow !== 'all' ? selectedWindow : undefined,
+      startTime: startDate ? startDate.toISOString() : undefined,
+      endTime: endDate ? endDate.toISOString() : undefined
     };
     onFilterChange(filters);
   };
 
   const resetFilters = () => {
-    setSelectedApp('');
-    setSelectedWindow('');
-    setStartDate('');
-    setEndDate('');
+    setSelectedApp('all');
+    setSelectedWindow('all');
+    setStartDate(undefined);
+    setEndDate(undefined);
     onFilterChange({ client_id: clientId });
   };
 
   return (
     <Card>
-      <CardContent>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel id="app-select-label">Application</InputLabel>
-              <Select
-                labelId="app-select-label"
-                id="app-select"
-                value={selectedApp}
-                label="Application"
-                onChange={handleAppChange}
-                disabled={loading}
-              >
-                <MenuItem value="">
-                  <em>All Applications</em>
-                </MenuItem>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+          <div className="md:col-span-3">
+            <Select
+              value={selectedApp}
+              onValueChange={handleAppChange}
+              disabled={loading}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Applications" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Applications</SelectItem>
                 {apps.map((app) => (
-                  <MenuItem key={app} value={app}>
+                  <SelectItem key={app} value={app}>
                     {app}
-                  </MenuItem>
+                  </SelectItem>
                 ))}
-              </Select>
-            </FormControl>
-          </Grid>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
-              <InputLabel id="window-select-label">Window</InputLabel>
-              <Select
-                labelId="window-select-label"
-                id="window-select"
-                value={selectedWindow}
-                label="Window"
-                onChange={handleWindowChange}
-                disabled={loading || !selectedApp}
-              >
-                <MenuItem value="">
-                  <em>All Windows</em>
-                </MenuItem>
+          <div className="md:col-span-3">
+            <Select
+              value={selectedWindow}
+              onValueChange={handleWindowChange}
+              disabled={loading || selectedApp === 'all'}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="All Windows" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Windows</SelectItem>
                 {windows.map((window) => (
-                  <MenuItem key={window} value={window}>
+                  <SelectItem key={window} value={window}>
                     {window}
-                  </MenuItem>
+                  </SelectItem>
                 ))}
-              </Select>
-            </FormControl>
-          </Grid>
+              </SelectContent>
+            </Select>
+          </div>
           
-          <Grid item xs={12} md={2}>
-            <TextField
-              id="start-date"
+          <div className="md:col-span-2">
+            <DatePicker
+              date={startDate}
+              setDate={setStartDate}
               label="Start Date"
-              type="datetime-local"
-              value={startDate}
-              onChange={handleStartDateChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              fullWidth
             />
-          </Grid>
+          </div>
           
-          <Grid item xs={12} md={2}>
-            <TextField
-              id="end-date"
+          <div className="md:col-span-2">
+            <DatePicker
+              date={endDate}
+              setDate={setEndDate}
               label="End Date"
-              type="datetime-local"
-              value={endDate}
-              onChange={handleEndDateChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              fullWidth
             />
-          </Grid>
+          </div>
           
-          <Grid item xs={12} md={2}>
-            <Box sx={{ display: 'flex', gap: 1, height: '100%', alignItems: 'center' }}>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={applyFilters}
-                disabled={loading}
-              >
-                Apply
-              </Button>
-              <Button 
-                variant="outlined" 
-                onClick={resetFilters}
-                disabled={loading}
-              >
-                Reset
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
+          <div className="md:col-span-2 flex gap-2">
+            <Button 
+              variant="default" 
+              onClick={applyFilters}
+              disabled={loading}
+              className="flex-1"
+            >
+              Apply
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={resetFilters}
+              disabled={loading}
+              className="flex-1"
+            >
+              Reset
+            </Button>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
