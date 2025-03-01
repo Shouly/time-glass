@@ -165,7 +165,16 @@ async def create_specialized_indices():
                 "app_name": {"type": "keyword"},
                 "window_name": {"type": "keyword"},
                 "focused": {"type": "boolean"},
-                "extracted_at": {"type": "date"}
+                "text_length": {"type": "integer"},
+                "extracted_at": {"type": "date"},
+                # 元数据字段
+                "app_version": {"type": "keyword"},
+                "platform": {"type": "keyword"},
+                "reporting_period_start": {"type": "date"},
+                "reporting_period_end": {"type": "date"},
+                "os": {"type": "keyword"},
+                "os_version": {"type": "keyword"},
+                "hostname": {"type": "keyword"}
             }
         }
     })
@@ -184,7 +193,16 @@ async def create_specialized_indices():
                 "speaker_id": {"type": "integer"},
                 "start_time": {"type": "float"},
                 "end_time": {"type": "float"},
-                "extracted_at": {"type": "date"}
+                "text_length": {"type": "integer"},
+                "extracted_at": {"type": "date"},
+                # 元数据字段
+                "app_version": {"type": "keyword"},
+                "platform": {"type": "keyword"},
+                "reporting_period_start": {"type": "date"},
+                "reporting_period_end": {"type": "date"},
+                "os": {"type": "keyword"},
+                "os_version": {"type": "keyword"},
+                "hostname": {"type": "keyword"}
             }
         }
     })
@@ -201,7 +219,16 @@ async def create_specialized_indices():
                 "app": {"type": "keyword"},
                 "window": {"type": "keyword"},
                 "initial_traversal_at": {"type": "date"},
-                "extracted_at": {"type": "date"}
+                "text_length": {"type": "integer"},
+                "extracted_at": {"type": "date"},
+                # 元数据字段
+                "app_version": {"type": "keyword"},
+                "platform": {"type": "keyword"},
+                "reporting_period_start": {"type": "date"},
+                "reporting_period_end": {"type": "date"},
+                "os": {"type": "keyword"},
+                "os_version": {"type": "keyword"},
+                "hostname": {"type": "keyword"}
             }
         }
     })

@@ -93,7 +93,16 @@ class DataService:
                     "app_name": frame.ocr_text.app_name,
                     "window_name": frame.ocr_text.window_name,
                     "focused": frame.ocr_text.focused,
-                    "extracted_at": datetime.utcnow().isoformat()
+                    "text_length": frame.ocr_text.text_length if frame.ocr_text.text_length is not None else 0,
+                    "extracted_at": datetime.utcnow().isoformat(),
+                    # 添加元数据信息
+                    "app_version": report.metadata.appVersion,
+                    "platform": report.metadata.platform,
+                    "reporting_period_start": report.metadata.reportingPeriod.start.isoformat(),
+                    "reporting_period_end": report.metadata.reportingPeriod.end.isoformat(),
+                    "os": report.metadata.systemInfo.os,
+                    "os_version": report.metadata.systemInfo.osVersion,
+                    "hostname": report.metadata.systemInfo.hostname
                 }
                 ocr_docs.append(ocr_doc)
         
@@ -127,7 +136,16 @@ class DataService:
                 "speaker_id": transcription.speaker_id,
                 "start_time": transcription.start_time,
                 "end_time": transcription.end_time,
-                "extracted_at": datetime.utcnow().isoformat()
+                "text_length": transcription.text_length if transcription.text_length is not None else 0,
+                "extracted_at": datetime.utcnow().isoformat(),
+                # 添加元数据信息
+                "app_version": report.metadata.appVersion,
+                "platform": report.metadata.platform,
+                "reporting_period_start": report.metadata.reportingPeriod.start.isoformat(),
+                "reporting_period_end": report.metadata.reportingPeriod.end.isoformat(),
+                "os": report.metadata.systemInfo.os,
+                "os_version": report.metadata.systemInfo.osVersion,
+                "hostname": report.metadata.systemInfo.hostname
             }
             audio_docs.append(audio_doc)
         
@@ -159,7 +177,16 @@ class DataService:
                 "app": ui_item.app,
                 "window": ui_item.window,
                 "initial_traversal_at": ui_item.initial_traversal_at.isoformat(),
-                "extracted_at": datetime.utcnow().isoformat()
+                "text_length": ui_item.text_length if ui_item.text_length is not None else 0,
+                "extracted_at": datetime.utcnow().isoformat(),
+                # 添加元数据信息
+                "app_version": report.metadata.appVersion,
+                "platform": report.metadata.platform,
+                "reporting_period_start": report.metadata.reportingPeriod.start.isoformat(),
+                "reporting_period_end": report.metadata.reportingPeriod.end.isoformat(),
+                "os": report.metadata.systemInfo.os,
+                "os_version": report.metadata.systemInfo.osVersion,
+                "hostname": report.metadata.systemInfo.hostname
             }
             ui_docs.append(ui_doc)
         

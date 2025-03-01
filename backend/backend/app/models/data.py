@@ -10,7 +10,7 @@ class OcrText(BaseModel):
     ocr_engine: str
     window_name: str
     focused: bool
-    text_length: int
+    text_length: Optional[int] = Field(default=0)
 
 # 屏幕帧模型
 class Frame(BaseModel):
@@ -35,7 +35,7 @@ class AudioTranscription(BaseModel):
     transcription_engine: str
     start_time: float
     end_time: float
-    text_length: int
+    text_length: Optional[int] = Field(default=0)
 
 # UI监控模型
 class UiMonitoring(BaseModel):
@@ -45,7 +45,7 @@ class UiMonitoring(BaseModel):
     app: str
     window: str
     initial_traversal_at: datetime
-    text_length: int
+    text_length: Optional[int] = Field(default=0)
 
 # 数据载荷模型
 class DataPayload(BaseModel):
