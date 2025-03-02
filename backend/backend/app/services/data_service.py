@@ -28,7 +28,7 @@ class DataService:
             report_id = str(uuid.uuid4())
             
             # 准备索引名称（按日期分片）
-            index_name = f"{settings.ES_INDEX_PREFIX}-data-{datetime.utcnow().strftime('%Y.%m.%d')}"
+            index_name = f"{settings.ES_INDEX_PREFIX}-data-{report.timestamp.strftime('%Y.%m.%d')}"
             
             # 确保索引存在
             index_exists = await ensure_index_exists(index_name)

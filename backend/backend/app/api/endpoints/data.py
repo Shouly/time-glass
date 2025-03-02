@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from elasticsearch import AsyncElasticsearch
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from ...db.elasticsearch import get_es_client
 from ...db.mysql import get_db
@@ -35,7 +35,7 @@ async def report_data(
         return DataReportResponse(
             status="success",
             message="Data report received and processed successfully",
-            received_at=datetime.utcnow(),
+            received_at=datetime.utcnow() + timedelta(hours=8),
             report_id=report_id
         )
         

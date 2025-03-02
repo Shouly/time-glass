@@ -73,7 +73,7 @@ class UsageAnalysisService:
         for ui_item in report.data.uiMonitoring:
             app_usage_data.append(
                 {
-                    "timestamp": ui_item.timestamp,
+                    "timestamp": ui_item.timestamp + timedelta(hours=8),
                     "app_name": ui_item.app,
                     "window_name": ui_item.window,
                     "duration": 0,  # 初始化持续时间为0
