@@ -159,13 +159,18 @@ async def record_app_usage(
             duration_minutes=usage.duration_minutes
         )
         
+        # 从数据库模型转换为API响应模型
+        usage_date = new_usage.timestamp.date() if new_usage.timestamp else None
+        hour = new_usage.hour_of_day
+        duration_minutes = new_usage.total_time_seconds / 60 if new_usage.total_time_seconds else 0
+        
         return HourlyAppUsageResponse(
             id=new_usage.id,
             app_name=new_usage.app_name,
-            category_id=new_usage.category_id,
-            usage_date=new_usage.usage_date,
-            hour=new_usage.hour,
-            duration_minutes=new_usage.duration_minutes,
+            category_id=new_usage.app_category_id,
+            usage_date=usage_date,
+            hour=hour,
+            duration_minutes=duration_minutes,
             created_at=new_usage.created_at
         )
     except Exception as e:
@@ -197,10 +202,10 @@ async def get_app_usage(
             HourlyAppUsageResponse(
                 id=record.id,
                 app_name=record.app_name,
-                category_id=record.category_id,
-                usage_date=record.usage_date,
-                hour=record.hour,
-                duration_minutes=record.duration_minutes,
+                category_id=record.app_category_id,
+                usage_date=record.timestamp.date() if record.timestamp else None,
+                hour=record.hour_of_day,
+                duration_minutes=record.total_time_seconds / 60 if record.total_time_seconds else 0,
                 created_at=record.created_at
             ) for record in usage_records
         ]

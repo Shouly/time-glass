@@ -1,5 +1,5 @@
 import logging
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 from typing import Any, Dict, List, Optional, Tuple
 
 from elasticsearch import AsyncElasticsearch
@@ -118,7 +118,7 @@ class AppUsageService:
         stmt = (
             select(func.count())
             .select_from(HourlyAppUsage)
-            .where(HourlyAppUsage.category_id == category_id)
+            .where(HourlyAppUsage.app_category_id == category_id)
         )
         result = await self.db.execute(stmt)
         usage_count = result.scalar()
@@ -175,49 +175,59 @@ class AppUsageService:
         usage_date: date,
         hour: int,
         duration_minutes: float,
+        client_id: str = "default_user",
     ) -> HourlyAppUsage:
         """记录应用使用时间"""
-        # 验证类别是否存在
-        category = await self.get_app_category_by_id(category_id)
-        if not category:
-            raise ValueError(f"应用类别ID {category_id} 不存在")
-
-        # 验证小时值是否有效
-        if hour < 0 or hour > 23:
-            raise ValueError("小时值必须在0-23之间")
+        # 创建时间戳
+        timestamp = datetime.combine(usage_date, time(hour=hour))
+        
+        # 计算星期几和是否是工作时间
+        day_of_week = timestamp.weekday()
+        is_working_hour = 9 <= hour < 18 and day_of_week < 5  # 工作日9点到18点
+        
+        # 转换为秒
+        total_time_seconds = duration_minutes * 60
 
         # 检查是否已存在相同记录
         stmt = select(HourlyAppUsage).where(
             and_(
                 HourlyAppUsage.app_name == app_name,
-                HourlyAppUsage.category_id == category_id,
-                HourlyAppUsage.usage_date == usage_date,
-                HourlyAppUsage.hour == hour,
+                HourlyAppUsage.app_category_id == category_id,
+                HourlyAppUsage.timestamp == timestamp,
+                HourlyAppUsage.hour_of_day == hour,
             )
         )
         result = await self.db.execute(stmt)
         existing = result.scalars().first()
 
         if existing:
-            # 更新现有记录
-            existing.duration_minutes = duration_minutes
+            # 更新现有记录 - 累加而非覆盖
+            existing.total_time_seconds += total_time_seconds
+            # 更新会话计数 - 假设每次调用代表一个新会话
+            existing.session_count += 1
+            # 更新最后修改时间 - 使用北京时间
+            existing.updated_at = datetime.utcnow() + timedelta(hours=8)
             await self.db.commit()
             await self.db.refresh(existing)
             return existing
 
         # 创建新记录
         new_usage = HourlyAppUsage(
+            user_id=client_id,
             app_name=app_name,
-            category_id=category_id,
-            usage_date=usage_date,
-            hour=hour,
-            duration_minutes=duration_minutes,
+            app_category_id=category_id,
+            timestamp=timestamp,  # 这里的timestamp已经是北京时间，因为它是从usage_date和hour构建的
+            hour_of_day=hour,
+            day_of_week=day_of_week,
+            is_working_hour=is_working_hour,
+            total_time_seconds=total_time_seconds,
+            session_count=1,  # 默认为1个会话
         )
 
         self.db.add(new_usage)
         await self.db.commit()
         await self.db.refresh(new_usage)
-
+        
         return new_usage
 
     async def batch_record_hourly_app_usage(
@@ -234,6 +244,7 @@ class AppUsageService:
                     usage_date=record["usage_date"],
                     hour=record["hour"],
                     duration_minutes=record["duration_minutes"],
+                    client_id=record["client_id"],
                 )
                 results.append(usage)
             except Exception as e:
@@ -252,11 +263,15 @@ class AppUsageService:
         limit: int = 100,
     ) -> Tuple[List[HourlyAppUsage], int]:
         """获取应用使用时间记录"""
+        # 转换日期为datetime
+        start_datetime = datetime.combine(start_date, time.min)
+        end_datetime = datetime.combine(end_date, time.max)
+        
         # 构建基本查询
         query = select(HourlyAppUsage).where(
             and_(
-                HourlyAppUsage.usage_date >= start_date,
-                HourlyAppUsage.usage_date <= end_date,
+                HourlyAppUsage.timestamp >= start_datetime,
+                HourlyAppUsage.timestamp <= end_datetime,
             )
         )
 
@@ -265,8 +280,8 @@ class AppUsageService:
             .select_from(HourlyAppUsage)
             .where(
                 and_(
-                    HourlyAppUsage.usage_date >= start_date,
-                    HourlyAppUsage.usage_date <= end_date,
+                    HourlyAppUsage.timestamp >= start_datetime,
+                    HourlyAppUsage.timestamp <= end_datetime,
                 )
             )
         )
@@ -277,19 +292,11 @@ class AppUsageService:
             count_query = count_query.where(HourlyAppUsage.app_name == app_name)
 
         if category_id:
-            query = query.where(HourlyAppUsage.category_id == category_id)
-            count_query = count_query.where(HourlyAppUsage.category_id == category_id)
+            query = query.where(HourlyAppUsage.app_category_id == category_id)
+            count_query = count_query.where(HourlyAppUsage.app_category_id == category_id)
 
         # 添加排序和分页
-        query = (
-            query.order_by(
-                HourlyAppUsage.usage_date.desc(),
-                HourlyAppUsage.hour.desc(),
-                HourlyAppUsage.app_name,
-            )
-            .offset(skip)
-            .limit(limit)
-        )
+        query = query.order_by(HourlyAppUsage.timestamp.desc()).offset(skip).limit(limit)
 
         # 执行查询
         result = await self.db.execute(query)
@@ -304,16 +311,20 @@ class AppUsageService:
         self, start_date: date, end_date: date
     ) -> Tuple[float, float, float]:
         """获取生产力统计摘要"""
+        # 转换日期为datetime
+        start_datetime = datetime.combine(start_date, time.min)
+        end_datetime = datetime.combine(end_date, time.max)
+        
         # 查询各生产力类型的总使用时间
         query = (
             select(
-                AppCategory.productivity_type, func.sum(HourlyAppUsage.duration_minutes)
+                AppCategory.productivity_type, func.sum(HourlyAppUsage.total_time_seconds / 60)
             )
-            .join(AppCategory, HourlyAppUsage.category_id == AppCategory.id)
+            .join(AppCategory, HourlyAppUsage.app_category_id == AppCategory.id)
             .where(
                 and_(
-                    HourlyAppUsage.usage_date >= start_date,
-                    HourlyAppUsage.usage_date <= end_date,
+                    HourlyAppUsage.timestamp >= start_datetime,
+                    HourlyAppUsage.timestamp <= end_datetime,
                 )
             )
             .group_by(AppCategory.productivity_type)
@@ -343,31 +354,35 @@ class AppUsageService:
         self, start_date: date, end_date: date
     ) -> List[Dict[str, Any]]:
         """获取每日应用使用时间统计"""
+        # 转换日期为datetime
+        start_datetime = datetime.combine(start_date, time.min)
+        end_datetime = datetime.combine(end_date, time.max)
+        
         # 查询每日应用使用时间
         query = (
             select(
-                HourlyAppUsage.usage_date,
+                func.date(HourlyAppUsage.timestamp).label("usage_date"),
                 HourlyAppUsage.app_name,
-                HourlyAppUsage.category_id,
+                HourlyAppUsage.app_category_id,
                 AppCategory.name.label("category_name"),
                 AppCategory.productivity_type,
-                func.sum(HourlyAppUsage.duration_minutes).label("total_minutes"),
+                func.sum(HourlyAppUsage.total_time_seconds / 60).label("total_minutes"),
             )
-            .join(AppCategory, HourlyAppUsage.category_id == AppCategory.id)
+            .join(AppCategory, HourlyAppUsage.app_category_id == AppCategory.id)
             .where(
                 and_(
-                    HourlyAppUsage.usage_date >= start_date,
-                    HourlyAppUsage.usage_date <= end_date,
+                    HourlyAppUsage.timestamp >= start_datetime,
+                    HourlyAppUsage.timestamp <= end_datetime,
                 )
             )
             .group_by(
-                HourlyAppUsage.usage_date,
+                func.date(HourlyAppUsage.timestamp),
                 HourlyAppUsage.app_name,
-                HourlyAppUsage.category_id,
+                HourlyAppUsage.app_category_id,
                 AppCategory.name,
                 AppCategory.productivity_type,
             )
-            .order_by(HourlyAppUsage.usage_date, desc("total_minutes"))
+            .order_by(func.date(HourlyAppUsage.timestamp), desc("total_minutes"))
         )
 
         result = await self.db.execute(query)
@@ -379,7 +394,7 @@ class AppUsageService:
                 {
                     "date": row.usage_date.isoformat(),
                     "app_name": row.app_name,
-                    "category_id": row.category_id,
+                    "category_id": row.app_category_id,
                     "category_name": row.category_name,
                     "productivity_type": row.productivity_type,
                     "total_minutes": row.total_minutes,
@@ -522,9 +537,6 @@ class AppUsageService:
                     total_time / session_count if session_count > 0 else 0
                 ),
                 "switch_count": len(items) - 1 if len(items) > 1 else 0,
-                "concurrent_apps": 1.0,  # 简化处理
-                "device_os": items[0].get("os", ""),
-                "device_os_version": items[0].get("os_version", ""),
             }
 
             hourly_app_usage.append(hour_usage)

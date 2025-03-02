@@ -59,10 +59,6 @@ class HourlyAppUsage(Base):
     session_count = Column(Integer, nullable=False)
     avg_session_time = Column(Float, nullable=True)
     switch_count = Column(Integer, nullable=True)
-    concurrent_apps = Column(Float, nullable=True)
-    device_os = Column(String(50), nullable=True)
-    device_os_version = Column(String(50), nullable=True)
-    network_type = Column(String(50), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

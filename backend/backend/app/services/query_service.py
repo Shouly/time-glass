@@ -35,6 +35,9 @@ class QueryService:
             dict: 包含UI监控数据的字典
         """
         try:
+            # 注意：ES中的时间戳直接是北京时间，而start_time和end_time是UTC时间
+            # 我们需要将UTC时间转换为北京时间进行比较
+            
             # 构建查询
             query = {"bool": {"must": []}}
             
@@ -46,9 +49,13 @@ class QueryService:
             if start_time or end_time:
                 time_range = {}
                 if start_time:
-                    time_range["gte"] = start_time.isoformat()
+                    # 将UTC时间转换为北京时间（UTC+8）
+                    beijing_start_time = start_time + timedelta(hours=8)
+                    time_range["gte"] = beijing_start_time.isoformat()
                 if end_time:
-                    time_range["lte"] = end_time.isoformat()
+                    # 将UTC时间转换为北京时间（UTC+8）
+                    beijing_end_time = end_time + timedelta(hours=8)
+                    time_range["lte"] = beijing_end_time.isoformat()
                 query["bool"]["must"].append({"range": {"timestamp": time_range}})
             
             # 添加应用名称过滤

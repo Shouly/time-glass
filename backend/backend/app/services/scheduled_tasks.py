@@ -10,12 +10,12 @@ from ..services.usage_analysis_service import UsageAnalysisService
 logger = logging.getLogger(__name__)
 
 
-async def process_unprocessed_app_usage_reports(hours_back: int = 24):
+async def recalculate_hourly_app_usage_statistics(hours_back: int = 24):
     """
-    处理未处理的应用使用报告
+    重新计算小时应用使用统计
 
     Args:
-        hours_back: 处理多少小时前的报告
+        hours_back: 重新计算多少小时前的数据
     """
     try:
         # 使用异步上下文管理器获取数据库会话
@@ -27,38 +27,45 @@ async def process_unprocessed_app_usage_reports(hours_back: int = 24):
                 # 创建使用分析服务
                 usage_analysis_service = UsageAnalysisService(db, es_client)
 
-                # 处理未处理的报告
-                await usage_analysis_service.process_unprocessed_reports(hours_back)
+                # 重新计算小时统计
+                await usage_analysis_service.recalculate_hourly_statistics(hours_back)
 
                 logger.info(
-                    f"Completed processing unprocessed app usage reports from the past {hours_back} hours"
+                    f"Completed recalculating hourly app usage statistics from the past {hours_back} hours"
                 )
 
             except Exception as e:
                 logger.error(
-                    f"Error in scheduled task process_unprocessed_app_usage_reports: {e}"
+                    f"Error in scheduled task recalculate_hourly_app_usage_statistics: {e}"
                 )
                 raise
 
     except Exception as e:
         logger.error(
-            f"Error in scheduled task process_unprocessed_app_usage_reports: {e}"
+            f"Error in scheduled task recalculate_hourly_app_usage_statistics: {e}"
         )
 
 
 async def schedule_tasks():
     """
     调度定时任务
+
+    注意：系统处理的是北京时间（UTC+8）的数据。ES中的时间戳是北京时间，
+    而我们的查询使用UTC时间，但会在查询时将其转换为北京时间进行比较。
     """
     while True:
         try:
-            # 每小时处理一次未处理的报告
-            await process_unprocessed_app_usage_reports(hours_back=24)
+            logger.info("开始执行定时任务")
 
-            logger.info("Scheduled task completed successfully")
+            # 重新计算小时应用使用统计
+            # 这个任务会从ES中获取原始数据并重新计算统计信息
+            await recalculate_hourly_app_usage_statistics(hours_back=2)
+
+            logger.info("定时任务执行完成")
 
         except Exception as e:
-            logger.error(f"Error in scheduled tasks: {e}")
+            logger.error(f"执行定时任务时出错: {e}")
+            # 这里可以添加错误通知逻辑
 
-        # 等待1小时
+        # 等待一段时间后再次执行（例如每小时执行一次）
         await asyncio.sleep(3600)  # 3600秒 = 1小时
