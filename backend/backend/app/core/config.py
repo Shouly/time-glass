@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     # 索引配置
     ES_INDEX_PREFIX: str = "timeglass"
     
+    # MySQL数据库配置
+    MYSQL_USER: str = os.getenv("MYSQL_USER", "root")
+    MYSQL_PASSWORD: str = os.getenv("MYSQL_PASSWORD", "password")
+    MYSQL_HOST: str = os.getenv("MYSQL_HOST", "localhost")
+    MYSQL_PORT: str = os.getenv("MYSQL_PORT", "3306")
+    MYSQL_DATABASE: str = os.getenv("MYSQL_DATABASE", "timeglass")
+    MYSQL_DATABASE_URL: str = f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{MYSQL_HOST}:{MYSQL_PORT}/{MYSQL_DATABASE}"
+    
     # 其他配置
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
 
