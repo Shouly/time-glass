@@ -85,14 +85,14 @@ export interface TimeUsageItem {
 
 export interface UsageBreakdown {
   productive: number;
-  non_productive: number;
+  distracting: number;
   neutral: number;
 }
 
 export interface TimeUsageSummary {
   total_time_seconds: number;
   productive_time_seconds: number;
-  non_productive_time_seconds: number;
+  distracting_time_seconds: number;
   neutral_time_seconds: number;
   productivity_score: number;
   daily_usage: Record<string, UsageBreakdown>;
@@ -154,7 +154,7 @@ export interface ProductivityScore {
   date: string;
   score: number;
   productive_time_seconds: number;
-  non_productive_time_seconds: number;
+  distracting_time_seconds: number;
   neutral_time_seconds: number;
   total_time_seconds: number;
 }
@@ -163,7 +163,7 @@ export interface ProductivityTrend {
   dates: string[];
   scores: number[];
   productive_times: number[];
-  non_productive_times: number[];
+  distracting_times: number[];
   neutral_times: number[];
   total_times: number[];
   avg_score: number;
@@ -175,7 +175,7 @@ export interface ProductivityResponse {
   current: ProductivityScore;
   trend: ProductivityTrend;
   top_productive_apps: AppUsageItem[];
-  top_non_productive_apps: AppUsageItem[];
+  top_distracting_apps: AppUsageItem[];
 }
 
 export interface ProductivityQueryParams {

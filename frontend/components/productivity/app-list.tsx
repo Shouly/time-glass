@@ -23,9 +23,9 @@ export function AppList({ apps, totalTime, showCategory = true }: AppListProps) 
         badgeClass = "bg-green-100 text-green-800"
         label = "生产型"
         break
-      case "non_productive":
+      case "DISTRACTING":
         badgeClass = "bg-red-100 text-red-800"
-        label = "非生产型"
+        label = "干扰型"
         break
       case "neutral":
         badgeClass = "bg-blue-100 text-blue-800"
@@ -81,7 +81,7 @@ export function AppList({ apps, totalTime, showCategory = true }: AppListProps) 
                 <div 
                   className={`h-full ${
                     app.productivity_type === "productive" ? "bg-green-500" :
-                    app.productivity_type === "non_productive" ? "bg-red-500" :
+                    app.productivity_type === "DISTRACTING" ? "bg-red-500" :
                     "bg-blue-500"
                   }`}
                   style={{ width: `${app.percentage}%` }}

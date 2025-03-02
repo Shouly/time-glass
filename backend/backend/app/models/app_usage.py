@@ -19,9 +19,9 @@ from ..db.mysql import Base
 
 
 class ProductivityType(str, enum.Enum):
-    PRODUCTIVE = "productive"
-    NON_PRODUCTIVE = "non_productive"
-    NEUTRAL = "neutral"
+    PRODUCTIVE = "PRODUCTIVE"
+    DISTRACTING = "DISTRACTING"
+    NEUTRAL = "NEUTRAL"
 
 
 class AppCategory(Base):

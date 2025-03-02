@@ -47,7 +47,7 @@ export function getProductivityColor(type: string): string {
   switch (type.toLowerCase()) {
     case "productive":
       return "bg-green-500"
-    case "non_productive":
+    case "distracting":
       return "bg-red-500"
     case "neutral":
       return "bg-blue-500"

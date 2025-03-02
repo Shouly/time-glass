@@ -71,12 +71,12 @@ class HourlyUsageStats(BaseModel):
     hour: int
     total_time_seconds: float
     productive_time_seconds: float
-    non_productive_time_seconds: float
+    distracting_time_seconds: float
     neutral_time_seconds: float
     
 class DailyUsageStats(BaseModel):
     date: str
     total_time_seconds: float
     productive_time_seconds: float
-    non_productive_time_seconds: float
+    distracting_time_seconds: float
     neutral_time_seconds: float 

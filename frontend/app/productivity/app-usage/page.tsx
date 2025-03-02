@@ -111,7 +111,7 @@ const mockAppUsageData = {
       apps: ["系统设置", "访达", "活动监视器", "钉钉"]
     },
     {
-      category: "non_productive",
+      category: "distracting",
       total_time_seconds: 39, // 39秒
       percentage: 0.14,
       apps: ["社交媒体"]
@@ -164,7 +164,7 @@ mockHourlyData[20].productive = 15;
 const pieChartData = [
   { name: "生产型应用", value: 26880, color: "#22c55e" },
   { name: "中性应用", value: 1380, color: "#3b82f6" },
-  { name: "非生产型应用", value: 39, color: "#ef4444" }
+  { name: "干扰型应用", value: 39, color: "#ef4444" }
 ];
 
 export default function AppUsagePage() {
@@ -224,8 +224,8 @@ export default function AppUsagePage() {
 
     if (activeTab === "productive") {
       filtered = filtered.filter(app => app.productivity_type === "productive")
-    } else if (activeTab === "non_productive") {
-      filtered = filtered.filter(app => app.productivity_type === "non_productive")
+    } else if (activeTab === "distracting") {
+      filtered = filtered.filter(app => app.productivity_type === "DISTRACTING")
     } else if (activeTab === "neutral") {
       filtered = filtered.filter(app => app.productivity_type === "neutral")
     }
@@ -358,7 +358,7 @@ export default function AppUsagePage() {
 
           <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">非生产型应用时间</CardTitle>
+              <CardTitle className="text-sm font-medium">干扰型应用时间</CardTitle>
               <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center">
                 <Clock className="h-4 w-4 text-red-600 dark:text-red-300" />
               </div>
@@ -379,7 +379,7 @@ export default function AppUsagePage() {
             <TabsTrigger value="overview">概览</TabsTrigger>
             <TabsTrigger value="productive">效率与财务</TabsTrigger>
             <TabsTrigger value="neutral">其他</TabsTrigger>
-            <TabsTrigger value="non_productive">社交</TabsTrigger>
+            <TabsTrigger value="distracting">社交</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -429,7 +429,7 @@ export default function AppUsagePage() {
             </Card>
           </TabsContent>
 
-          {["overview", "productive", "neutral", "non_productive"].map((tab) => (
+          {["overview", "productive", "neutral", "distracting"].map((tab) => (
             <TabsContent key={tab} value={tab} className="space-y-4">
               <Card className="border shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
@@ -437,7 +437,7 @@ export default function AppUsagePage() {
                     <CardTitle>
                       {tab === "overview" ? "显示App" :
                         tab === "productive" ? "效率与财务" :
-                          tab === "neutral" ? "其他" : "社交"}
+                          tab === "neutral" ? "其他" : "干扰型"}
                     </CardTitle>
                     <CardDescription>
                       {tab === "overview" ? "所有应用的使用情况" :
@@ -493,7 +493,7 @@ export default function AppUsagePage() {
                                 <div className="w-16 h-2 bg-gray-100 rounded-full mr-2">
                                   <div
                                     className={`h-full rounded-full ${app.productivity_type === "productive" ? "bg-green-500" :
-                                      app.productivity_type === "non_productive" ? "bg-red-500" : "bg-blue-500"
+                                      app.productivity_type === "DISTRACTING" ? "bg-red-500" : "bg-blue-500"
                                       }`}
                                     style={{ width: `${app.percentage}%` }}
                                   />
