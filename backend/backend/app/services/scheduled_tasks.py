@@ -59,7 +59,7 @@ async def schedule_tasks():
 
             # 重新计算小时应用使用统计
             # 这个任务会从ES中获取原始数据并重新计算统计信息
-            await recalculate_hourly_app_usage_statistics(hours_back=2)
+            await recalculate_hourly_app_usage_statistics(hours_back=4)
 
             logger.info("定时任务执行完成")
 
