@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { DatePicker } from '@/components/ui/date-picker';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -14,7 +13,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { getUiMonitoringApps, getUiMonitoringWindows, UiMonitoringQueryParams } from '@/lib/api';
-import { CalendarIcon, FilterIcon, RotateCcwIcon, Search } from 'lucide-react';
+import { FilterIcon, RotateCcwIcon, Search } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 interface UiMonitoringFilterProps {
   clientId?: string;
@@ -22,10 +22,10 @@ interface UiMonitoringFilterProps {
   onFilterChange: (filters: UiMonitoringQueryParams) => void;
 }
 
-export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({ 
-  clientId, 
+export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
+  clientId,
   onClientIdChange,
-  onFilterChange 
+  onFilterChange
 }) => {
   const [localClientId, setLocalClientId] = useState<string>(clientId || '');
   const [apps, setApps] = useState<string[]>([]);
@@ -45,6 +45,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
 
   useEffect(() => {
     loadApps();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
       setWindows([]);
       setSelectedWindow('all');
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedApp, clientId]);
 
   const loadApps = async () => {
@@ -129,9 +131,9 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
             <CardTitle>筛选数据</CardTitle>
             <CardDescription>查找和筛选 UI 监控数据</CardDescription>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={toggleAdvancedFilters}
             className="h-8 gap-1"
           >
@@ -140,7 +142,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
           </Button>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4">
         {/* 客户端 ID 筛选 */}
         <div className="flex flex-col sm:flex-row gap-4">
@@ -154,7 +156,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                 onChange={handleClientIdChange}
                 className="flex-1"
               />
-              <Button 
+              <Button
                 onClick={handleClientIdSubmit}
                 disabled={!localClientId.trim() || localClientId === clientId}
                 className="gap-1"
@@ -162,8 +164,8 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                 <Search className="h-4 w-4" />
                 应用
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={() => {
                   setLocalClientId('');
                   if (onClientIdChange) onClientIdChange('');
@@ -177,7 +179,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
             </div>
           </div>
         </div>
-        
+
         {/* 高级筛选选项 */}
         {isAdvancedFiltersVisible && (
           <div className="pt-4 border-t space-y-6">
@@ -202,7 +204,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="window-select">窗口</Label>
                 <Select
@@ -224,7 +226,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                 </Select>
               </div>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>开始日期</Label>
@@ -234,7 +236,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                   label="选择开始日期"
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label>结束日期</Label>
                 <DatePicker
@@ -244,10 +246,10 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                 />
               </div>
             </div>
-            
+
             <div className="flex justify-end gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={resetFilters}
                 disabled={loading}
                 className="gap-1"
@@ -255,8 +257,8 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
                 <RotateCcwIcon className="h-4 w-4" />
                 重置筛选
               </Button>
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 onClick={applyFilters}
                 disabled={loading}
                 className="gap-1"
@@ -267,7 +269,7 @@ export const UiMonitoringFilter: React.FC<UiMonitoringFilterProps> = ({
             </div>
           </div>
         )}
-        
+
         {/* 当前筛选条件显示 */}
         {clientId && (
           <div className="pt-2 border-t">

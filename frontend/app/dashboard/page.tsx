@@ -1,17 +1,14 @@
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Clock, 
-  BarChart2, 
-  PieChart, 
-  Calendar, 
-  Activity, 
-  Laptop, 
-  Globe, 
-  FileText,
-  ArrowUpRight,
+import {
+  Activity,
   ArrowDownRight,
+  ArrowUpRight,
+  Clock,
+  FileText,
+  Globe,
+  Laptop,
+  PieChart,
   TrendingUp,
   Users
 } from "lucide-react";
@@ -35,7 +32,7 @@ export default function Dashboard() {
               <TabsTrigger value="applications">应用使用</TabsTrigger>
               <TabsTrigger value="reports">报告</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="overview" className="space-y-4">
               {/* 概览统计卡片 */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

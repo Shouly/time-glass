@@ -1,16 +1,15 @@
 "use client"
 
-import React from "react"
+import { formatPercentage, formatTimeSpent } from "@/lib/utils"
 import {
-  PieChart,
-  Pie,
   Cell,
-  Tooltip,
   Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
+  Tooltip,
   TooltipProps
 } from "recharts"
-import { formatTimeSpent, formatPercentage } from "@/lib/utils"
 
 interface AppUsageChartProps {
   data: {
@@ -32,7 +31,7 @@ export function AppUsageChart({ data, totalTime }: AppUsageChartProps) {
   }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       const app = payload[0]?.payload
-      
+
       return (
         <div className="bg-white p-3 border rounded-md shadow-md">
           <p className="font-medium">{app.name}</p>
@@ -44,8 +43,8 @@ export function AppUsageChart({ data, totalTime }: AppUsageChartProps) {
           </p>
           {app.type && (
             <p className="text-sm mt-1">
-              类型: {app.type === "productive" ? "生产型" : 
-                    app.type === "non_productive" ? "非生产型" : "中性"}
+              类型: {app.type === "productive" ? "生产型" :
+                app.type === "non_productive" ? "非生产型" : "中性"}
             </p>
           )}
         </div>
@@ -103,9 +102,9 @@ export function AppUsageChart({ data, totalTime }: AppUsageChartProps) {
           dataKey="value"
         >
           {data.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`} 
-              fill={entry.color || COLORS[index % COLORS.length]} 
+            <Cell
+              key={`cell-${index}`}
+              fill={entry.color || COLORS[index % COLORS.length]}
             />
           ))}
         </Pie>

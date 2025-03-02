@@ -10,29 +10,29 @@ export function formatTimeSpent(seconds: number): string {
   if (seconds < 60) {
     return `${seconds}秒`
   }
-  
+
   const minutes = Math.floor(seconds / 60)
   if (minutes < 60) {
     const remainingSeconds = seconds % 60
-    return remainingSeconds > 0 
-      ? `${minutes}分钟${remainingSeconds}秒` 
+    return remainingSeconds > 0
+      ? `${minutes}分钟${remainingSeconds}秒`
       : `${minutes}分钟`
   }
-  
+
   const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
-  
+
   if (hours < 24) {
-    return remainingMinutes > 0 
-      ? `${hours}小时${remainingMinutes}分钟` 
+    return remainingMinutes > 0
+      ? `${hours}小时${remainingMinutes}分钟`
       : `${hours}小时`
   }
-  
+
   const days = Math.floor(hours / 24)
   const remainingHours = hours % 24
-  
-  return remainingHours > 0 
-    ? `${days}天${remainingHours}小时` 
+
+  return remainingHours > 0
+    ? `${days}天${remainingHours}小时`
     : `${days}天`
 }
 
@@ -65,12 +65,12 @@ export function secondsToHours(seconds: number): number {
 export function getLastNDays(n: number): string[] {
   const result: string[] = []
   const today = new Date()
-  
+
   for (let i = n - 1; i >= 0; i--) {
     const date = new Date(today)
     date.setDate(today.getDate() - i)
     result.push(date.toISOString().split('T')[0])
   }
-  
+
   return result
 }

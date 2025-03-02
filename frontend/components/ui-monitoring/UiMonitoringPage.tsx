@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
-import { UiMonitoringFilter } from './UiMonitoringFilter';
-import { UiMonitoringList } from './UiMonitoringList';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getUiMonitoring, UiMonitoringItem, UiMonitoringQueryParams } from '@/lib/api';
 import { AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import React, { useEffect, useState } from 'react';
+import { UiMonitoringFilter } from './UiMonitoringFilter';
+import { UiMonitoringList } from './UiMonitoringList';
 
 interface UiMonitoringPageProps {
   clientId?: string;
   onClientIdChange?: (clientId: string) => void;
 }
 
-export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({ 
+export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({
   clientId,
   onClientIdChange
 }) => {
@@ -30,12 +30,14 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({
 
   useEffect(() => {
     loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
     if (clientId !== filters.client_id) {
       setFilters(prev => ({ ...prev, client_id: clientId, page: 1 }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clientId]);
 
   const loadData = async () => {
@@ -84,14 +86,14 @@ export const UiMonitoringPage: React.FC<UiMonitoringPageProps> = ({
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-      
-      <UiMonitoringFilter 
-        clientId={clientId} 
+
+      <UiMonitoringFilter
+        clientId={clientId}
         onClientIdChange={onClientIdChange}
-        onFilterChange={handleFilterChange} 
+        onFilterChange={handleFilterChange}
       />
-      
-      <UiMonitoringList 
+
+      <UiMonitoringList
         items={items}
         total={totalItems}
         currentPage={currentPage}

@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader,
-  CardTitle,
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
   CardDescription,
-  CardFooter
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from '@/components/ui/card';
 import {
   Table,
@@ -15,10 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
 import { UiMonitoringItem } from '@/lib/api';
-import { ChevronLeftIcon, ChevronRightIcon, MonitorIcon, InfoIcon, ClockIcon, AppWindowIcon, TerminalIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { AppWindowIcon, ChevronLeftIcon, ChevronRightIcon, ClockIcon, InfoIcon, MonitorIcon, TerminalIcon } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface UiMonitoringListProps {
   items: UiMonitoringItem[];
@@ -44,7 +44,7 @@ export const UiMonitoringList: React.FC<UiMonitoringListProps> = ({
   const formatDate = (dateString: string) => {
     try {
       return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss');
-    } catch (error) {
+    } catch (_error) {
       return '无效日期';
     }
   };
@@ -76,7 +76,7 @@ export const UiMonitoringList: React.FC<UiMonitoringListProps> = ({
   };
 
   const pageSizeOptions = [5, 10, 25, 50];
-  
+
   return (
     <Card>
       <CardHeader>
@@ -134,7 +134,7 @@ export const UiMonitoringList: React.FC<UiMonitoringListProps> = ({
                 <TableBody>
                   {items.map((item, index) => (
                     <React.Fragment key={index}>
-                      <TableRow 
+                      <TableRow
                         className="cursor-pointer hover:bg-muted/50"
                         onClick={() => toggleExpandItem(`${item.client_id}-${item.monitoring_id}`)}
                       >

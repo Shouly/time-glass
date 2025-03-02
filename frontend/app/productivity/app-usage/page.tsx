@@ -1,19 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { DateRange } from "react-day-picker"
-import { addDays, format } from "date-fns"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { DateRangePicker } from "@/components/ui/date-range-picker"
-import { AppUsageChart } from "@/components/productivity/app-usage-chart"
-import { AppList } from "@/components/productivity/app-list"
-import { formatTimeSpent, formatPercentage } from "@/lib/utils"
-import { Laptop, PieChart, BarChart2, Clock, ChevronLeft, ChevronRight, Calendar, Search, Filter } from "lucide-react"
+import { DailyUsageBarChart } from "@/components/charts/app-usage-bar-chart"
+import { AppUsagePieChart } from "@/components/charts/app-usage-pie-chart"
+import { HourlyUsageChart } from "@/components/charts/hourly-usage-chart"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, PieChart as RechartsPieChart, Pie, Cell } from "recharts"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { formatTimeSpent } from "@/lib/utils"
+import { addDays, format } from "date-fns"
+import { BarChart2, ChevronLeft, ChevronRight, Clock, PieChart, Search } from "lucide-react"
+import { useState } from "react"
+import { DateRange } from "react-day-picker"
 
 // 模拟数据
 const mockAppUsageData = {
@@ -133,14 +133,14 @@ const mockDailyData = [
 // 模拟每小时使用数据
 const mockHourlyData = Array.from({ length: 24 }, (_, i) => {
   let minutes = 0;
-  
+
   // 模拟工作时间段的使用情况
   if (i >= 9 && i <= 18) {
     minutes = Math.floor(Math.random() * 40) + 20;
   } else if (i >= 19 && i <= 22) {
     minutes = Math.floor(Math.random() * 20);
   }
-  
+
   return {
     hour: `${i}时`,
     productive: i >= 12 && i <= 18 ? minutes : 0,
@@ -167,20 +167,17 @@ const pieChartData = [
   { name: "非生产型应用", value: 39, color: "#ef4444" }
 ];
 
-const COLORS = ["#22c55e", "#3b82f6", "#ef4444"];
-
 export default function AppUsagePage() {
   const today = new Date();
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: today,
     to: today,
   })
-  
-  const [appUsageData, setAppUsageData] = useState(mockAppUsageData)
-  const [isLoading, setIsLoading] = useState(false)
+
+  const [appUsageData] = useState(mockAppUsageData)
   const [activeTab, setActiveTab] = useState("overview")
   const [searchTerm, setSearchTerm] = useState("")
-  
+
   // 模拟日期切换
   const handleDateChange = (newDateRange: DateRange | undefined) => {
     setDateRange(newDateRange);
@@ -202,7 +199,7 @@ export default function AppUsagePage() {
     if (dateRange?.from) {
       const nextDay = addDays(dateRange.from, 1);
       const today = new Date();
-      
+
       // 不允许选择未来日期
       if (nextDay <= today) {
         setDateRange({
@@ -212,19 +209,19 @@ export default function AppUsagePage() {
       }
     }
   }
-  
+
   // 过滤应用列表
   const getFilteredApps = () => {
     if (!appUsageData) return []
-    
+
     let filtered = appUsageData.apps;
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(app => 
+      filtered = filtered.filter(app =>
         app.app_name.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (activeTab === "productive") {
       filtered = filtered.filter(app => app.productivity_type === "productive")
     } else if (activeTab === "non_productive") {
@@ -232,23 +229,10 @@ export default function AppUsagePage() {
     } else if (activeTab === "neutral") {
       filtered = filtered.filter(app => app.productivity_type === "neutral")
     }
-    
+
     return filtered;
   }
-  
-  const CustomTooltip = ({ active, payload }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-white p-3 border rounded-md shadow-md">
-          <p className="font-medium">{payload[0].name}</p>
-          <p className="text-sm">使用时间: {formatTimeSpent(payload[0].value)}</p>
-          <p className="text-sm">占比: {formatPercentage(payload[0].value, appUsageData.total_time_seconds)}</p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
+
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-6">
@@ -259,18 +243,18 @@ export default function AppUsagePage() {
               今天 21:05 更新
             </p>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handlePrevDay}
                 className="h-8 w-8 rounded-full"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              
+
               <div className="relative">
                 <Select
                   value={dateRange?.from?.toISOString()}
@@ -282,8 +266,8 @@ export default function AppUsagePage() {
                   <SelectTrigger className="w-[160px] h-10 border rounded-md">
                     <SelectValue>
                       {dateRange?.from ? (
-                        dateRange.from.toDateString() === new Date().toDateString() 
-                          ? "今天" 
+                        dateRange.from.toDateString() === new Date().toDateString()
+                          ? "今天"
                           : format(dateRange.from, "yyyy年M月d日")
                       ) : "选择日期"}
                     </SelectValue>
@@ -303,10 +287,10 @@ export default function AppUsagePage() {
                   </SelectContent>
                 </Select>
               </div>
-              
-              <Button 
-                variant="ghost" 
-                size="icon" 
+
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={handleNextDay}
                 className="h-8 w-8 rounded-full"
                 disabled={dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()}
@@ -316,7 +300,7 @@ export default function AppUsagePage() {
             </div>
           </div>
         </div>
-        
+
         {/* 概览统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
@@ -331,13 +315,13 @@ export default function AppUsagePage() {
                 {formatTimeSpent(appUsageData.total_time_seconds)}
               </div>
               <p className="text-xs text-muted-foreground">
-                {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString() 
-                  ? "今天" 
+                {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()
+                  ? "今天"
                   : dateRange?.from ? format(dateRange.from, "yyyy年M月d日") : ""}
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">生产型应用时间</CardTitle>
@@ -354,7 +338,7 @@ export default function AppUsagePage() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">中性应用时间</CardTitle>
@@ -371,7 +355,7 @@ export default function AppUsagePage() {
               </p>
             </CardContent>
           </Card>
-          
+
           <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-0 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">非生产型应用时间</CardTitle>
@@ -389,7 +373,7 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
         </div>
-        
+
         <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="overview">概览</TabsTrigger>
@@ -397,7 +381,7 @@ export default function AppUsagePage() {
             <TabsTrigger value="neutral">其他</TabsTrigger>
             <TabsTrigger value="non_productive">社交</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="overview" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               {/* 每日使用图表 */}
@@ -409,29 +393,10 @@ export default function AppUsagePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={mockDailyData}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="day" />
-                      <YAxis 
-                        orientation="right" 
-                        label={{ value: '小时', position: 'top', offset: 10 }} 
-                        domain={[0, 12]}
-                      />
-                      <Tooltip formatter={(value) => [`${value}小时`, '使用时间']} />
-                      <Bar 
-                        dataKey="hours" 
-                        fill="#3b82f6" 
-                        radius={[4, 4, 0, 0]} 
-                        barSize={30}
-                        name="使用时间"
-                      />
-                      <Legend />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <DailyUsageBarChart data={mockDailyData} height={250} />
                 </CardContent>
               </Card>
-              
+
               {/* 应用类别分布 */}
               <Card className="border shadow-sm">
                 <CardHeader>
@@ -441,30 +406,15 @@ export default function AppUsagePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <RechartsPieChart>
-                      <Pie
-                        data={pieChartData}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      >
-                        {pieChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                    </RechartsPieChart>
-                  </ResponsiveContainer>
+                  <AppUsagePieChart
+                    data={pieChartData}
+                    totalTime={appUsageData.total_time_seconds}
+                    height={250}
+                  />
                 </CardContent>
               </Card>
             </div>
-            
+
             {/* 每小时使用图表 */}
             <Card className="border shadow-sm">
               <CardHeader>
@@ -474,44 +424,11 @@ export default function AppUsagePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={mockHourlyData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="hour" />
-                    <YAxis 
-                      orientation="right" 
-                      label={{ value: '分钟', position: 'top', offset: 10 }} 
-                      domain={[0, 60]}
-                    />
-                    <Tooltip formatter={(value) => [`${value}分钟`, '使用时间']} />
-                    <Bar 
-                      dataKey="productive" 
-                      stackId="a"
-                      fill="#22c55e" 
-                      radius={[0, 0, 0, 0]} 
-                      name="效率与财务"
-                    />
-                    <Bar 
-                      dataKey="neutral" 
-                      stackId="a"
-                      fill="#3b82f6" 
-                      radius={[0, 0, 0, 0]} 
-                      name="其他"
-                    />
-                    <Bar 
-                      dataKey="social" 
-                      stackId="a"
-                      fill="#ef4444" 
-                      radius={[0, 0, 0, 0]} 
-                      name="社交"
-                    />
-                    <Legend />
-                  </BarChart>
-                </ResponsiveContainer>
+                <HourlyUsageChart data={mockHourlyData} height={250} />
               </CardContent>
             </Card>
           </TabsContent>
-          
+
           {["overview", "productive", "neutral", "non_productive"].map((tab) => (
             <TabsContent key={tab} value={tab} className="space-y-4">
               <Card className="border shadow-sm">
@@ -519,13 +436,13 @@ export default function AppUsagePage() {
                   <div>
                     <CardTitle>
                       {tab === "overview" ? "显示App" :
-                       tab === "productive" ? "效率与财务" :
-                       tab === "neutral" ? "其他" : "社交"}
+                        tab === "productive" ? "效率与财务" :
+                          tab === "neutral" ? "其他" : "社交"}
                     </CardTitle>
                     <CardDescription>
                       {tab === "overview" ? "所有应用的使用情况" :
-                       tab === "productive" ? "提高工作效率的应用" :
-                       tab === "neutral" ? "工作辅助类应用" : "可能分散注意力的应用"}
+                        tab === "productive" ? "提高工作效率的应用" :
+                          tab === "neutral" ? "工作辅助类应用" : "可能分散注意力的应用"}
                     </CardDescription>
                   </div>
                   <div className="relative w-64">
@@ -566,7 +483,7 @@ export default function AppUsagePage() {
                                 <div className="font-medium">{app.app_name}</div>
                                 <div className="text-xs text-muted-foreground">
                                   {app.productivity_type === "productive" ? "效率与财务" :
-                                   app.productivity_type === "neutral" ? "其他" : "社交"}
+                                    app.productivity_type === "neutral" ? "其他" : "社交"}
                                 </div>
                               </div>
                             </td>
@@ -574,11 +491,10 @@ export default function AppUsagePage() {
                             <td className="py-3">
                               <div className="flex items-center">
                                 <div className="w-16 h-2 bg-gray-100 rounded-full mr-2">
-                                  <div 
-                                    className={`h-full rounded-full ${
-                                      app.productivity_type === "productive" ? "bg-green-500" :
+                                  <div
+                                    className={`h-full rounded-full ${app.productivity_type === "productive" ? "bg-green-500" :
                                       app.productivity_type === "non_productive" ? "bg-red-500" : "bg-blue-500"
-                                    }`}
+                                      }`}
                                     style={{ width: `${app.percentage}%` }}
                                   />
                                 </div>

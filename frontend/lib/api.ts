@@ -22,7 +22,7 @@ export interface UiMonitoringItem {
   text?: string;
   text_output?: string;
   text_length: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   platform?: string;
   os?: string;
   os_version?: string;
@@ -65,7 +65,7 @@ export async function getUiMonitoringWindows(clientId?: string, app?: string): P
   const params: Record<string, string> = {};
   if (clientId) params.client_id = clientId;
   if (app) params.app = app;
-  
+
   const response = await api.get('/query/ui-monitoring/windows', { params });
   return response.data;
 }
@@ -201,7 +201,7 @@ export async function getProductivityScore(params: ProductivityQueryParams): Pro
   return response.data;
 }
 
-export async function getAppCategories(): Promise<{id: number, name: string, productivity_type: string}[]> {
+export async function getAppCategories(): Promise<{ id: number, name: string, productivity_type: string }[]> {
   const response = await api.get('/productivity/categories');
   return response.data;
 } 

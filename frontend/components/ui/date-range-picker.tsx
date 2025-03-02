@@ -8,7 +8,6 @@ import { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import {
   Popover,
   PopoverContent,
@@ -269,7 +268,7 @@ function DayPickerRange({ selected, onSelect }: {
   onSelect: (range?: DateRange) => void 
 }) {
   const [currentMonth, setCurrentMonth] = React.useState(new Date());
-  const [hoverDate, setHoverDate] = React.useState<Date | null>(null);
+  // const [hoverDate, setHoverDate] = React.useState<Date | null>(null);
   
   // 生成月份标题
   const monthTitle = format(currentMonth, "M月 yyyy", { locale: zhCN });
@@ -400,8 +399,8 @@ function DayPickerRange({ selected, onSelect }: {
                   isToday(day) && !isInRange(day) && "bg-accent text-accent-foreground"
                 )}
                 onClick={() => handleDateClick(day)}
-                onMouseEnter={() => setHoverDate(day)}
-                onMouseLeave={() => setHoverDate(null)}
+                // onMouseEnter={() => setHoverDate(day)}
+                // onMouseLeave={() => setHoverDate(null)}
               >
                 {day.getDate()}
               </Button>

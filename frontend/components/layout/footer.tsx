@@ -1,7 +1,7 @@
 "use client";
 
+import { BarChart2 } from "lucide-react";
 import Link from "next/link";
-import { BarChart2, Users, Monitor } from "lucide-react";
 
 export function Footer() {
   return (
@@ -19,7 +19,7 @@ export function Footer() {
               全面监控、深入分析、优化员工工作效率，提升企业整体生产力
             </p>
           </div>
-          
+
           <div>
             <h3 className="mb-4 text-sm font-medium">分析功能</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -40,7 +40,7 @@ export function Footer() {
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="mb-4 text-sm font-medium">资源</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -71,7 +71,7 @@ export function Footer() {
               </li>
             </ul>
           </div>
-          
+
           <div>
             <h3 className="mb-4 text-sm font-medium">联系我们</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -98,7 +98,7 @@ export function Footer() {
             </ul>
           </div>
         </div>
-        
+
         <div className="mt-8 border-t pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground">
             &copy; {new Date().getFullYear()} 员工生产力分析平台. 保留所有权利。

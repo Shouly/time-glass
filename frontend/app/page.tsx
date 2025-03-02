@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, BarChart2, ArrowRight, Award, PieChart, Users, Zap, Monitor, TrendingUp, LineChart } from "lucide-react";
+import { ArrowRight, Award, BarChart2, LineChart, Monitor, PieChart, TrendingUp, Users, Zap } from "lucide-react";
 import Link from "next/link";
 
 export default function Home() {
