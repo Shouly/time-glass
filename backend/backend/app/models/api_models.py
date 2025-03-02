@@ -37,32 +37,6 @@ class HourlyAppUsageResponse(BaseModel):
     duration_minutes: float
     created_at: datetime
 
-# 批量应用使用时间记录模型
-class BatchAppUsageCreate(BaseModel):
-    items: List[HourlyAppUsageCreate]
-
-    class Config:
-        schema_extra = {
-            "example": {
-                "items": [
-                    {
-                        "app_name": "Chrome",
-                        "category_id": 1,
-                        "usage_date": "2023-03-01",
-                        "hour": 9,
-                        "duration_minutes": 45.5
-                    },
-                    {
-                        "app_name": "VS Code",
-                        "category_id": 2,
-                        "usage_date": "2023-03-01",
-                        "hour": 10,
-                        "duration_minutes": 55.0
-                    }
-                ]
-            }
-        }
-
 # 通用分页响应模型
 T = TypeVar('T')
 class PaginatedResponse(BaseModel, Generic[T]):

@@ -13,7 +13,6 @@ from ...models.api_models import (
     PaginatedResponse,
     ProductivitySummary,
     ProductivityTypeEnum,
-    BatchAppUsageCreate
 )
 
 router = APIRouter()
@@ -262,23 +261,3 @@ async def get_daily_app_usage(
         return daily_usage
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"获取每日应用使用时间统计失败: {str(e)}")
-
-# 批量记录应用使用时间
-@router.post("/usage/batch", response_model=dict)
-async def batch_record_app_usage(
-    usage_batch: BatchAppUsageCreate,
-    db: AsyncSession = Depends(get_db)
-):
-    """批量记录应用使用时间"""
-    service = AppUsageService(db)
-    try:
-        results = await service.batch_record_hourly_app_usage(usage_batch.items)
-        
-        return {
-            "status": "success",
-            "message": f"成功记录 {len(results)} 条应用使用时间数据",
-            "processed_count": len(results),
-            "total_count": len(usage_batch.items)
-        }
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"批量记录应用使用时间失败: {str(e)}")
