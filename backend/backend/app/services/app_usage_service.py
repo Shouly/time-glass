@@ -542,3 +542,95 @@ class AppUsageService:
             hourly_app_usage.append(hour_usage)
 
         return hourly_app_usage
+
+    async def get_hourly_usage_summary(self, date: date) -> List[Dict[str, Any]]:
+        """获取每小时使用统计"""
+        # 查询指定日期的应用使用记录
+        query = select(
+            HourlyAppUsage.hour_of_day,
+            AppCategory.productivity_type,
+            func.sum(HourlyAppUsage.total_time_seconds / 60).label("duration_minutes")
+        ).join(
+            AppCategory, 
+            HourlyAppUsage.app_category_id == AppCategory.id, 
+            isouter=True
+        ).where(
+            func.date(HourlyAppUsage.timestamp) == date
+        ).group_by(
+            HourlyAppUsage.hour_of_day,
+            AppCategory.productivity_type
+        ).order_by(
+            HourlyAppUsage.hour_of_day
+        )
+        
+        result = await self.db.execute(query)
+        hourly_usage_by_type = result.fetchall()
+        
+        # 处理数据，按小时分组
+        hourly_summary = {}
+        for hour, productivity_type, duration in hourly_usage_by_type:
+            hour_str = f"{hour:02d}:00"
+            if hour_str not in hourly_summary:
+                hourly_summary[hour_str] = {
+                    "hour": hour_str,
+                    "productive": 0,
+                    "neutral": 0,
+                    "distracting": 0
+                }
+            
+            if productivity_type == ProductivityType.PRODUCTIVE:
+                hourly_summary[hour_str]["productive"] += duration
+            elif productivity_type == ProductivityType.NEUTRAL:
+                hourly_summary[hour_str]["neutral"] += duration
+            elif productivity_type == ProductivityType.DISTRACTING:
+                hourly_summary[hour_str]["distracting"] += duration
+        
+        # 转换为列表并按小时排序
+        result_list = list(hourly_summary.values())
+        result_list.sort(key=lambda x: x["hour"])
+        
+        return result_list
+
+    async def get_hourly_app_usage_summary(self, date: date) -> List[Dict[str, Any]]:
+        """获取按应用分组的每小时使用统计"""
+        # 查询指定日期的应用使用记录，按应用名称和小时分组
+        query = select(
+            HourlyAppUsage.hour_of_day,
+            HourlyAppUsage.app_name,
+            AppCategory.productivity_type,
+            func.sum(HourlyAppUsage.total_time_seconds / 60).label("duration_minutes")
+        ).join(
+            AppCategory, 
+            HourlyAppUsage.app_category_id == AppCategory.id, 
+            isouter=True
+        ).where(
+            func.date(HourlyAppUsage.timestamp) == date
+        ).group_by(
+            HourlyAppUsage.hour_of_day,
+            HourlyAppUsage.app_name,
+            AppCategory.productivity_type
+        ).order_by(
+            HourlyAppUsage.hour_of_day,
+            func.sum(HourlyAppUsage.total_time_seconds).desc()
+        )
+        
+        result = await self.db.execute(query)
+        hourly_app_usage = result.fetchall()
+        
+        # 处理数据，转换为响应格式
+        result_list = []
+        for hour, app_name, productivity_type, duration in hourly_app_usage:
+            hour_str = f"{hour:02d}:00"
+            
+            # 如果没有生产力类型，默认为中性
+            if not productivity_type:
+                productivity_type = ProductivityType.NEUTRAL
+                
+            result_list.append({
+                "hour": hour_str,
+                "app_name": app_name,
+                "productivity_type": productivity_type,
+                "duration_minutes": duration
+            })
+        
+        return result_list

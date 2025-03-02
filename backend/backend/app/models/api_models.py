@@ -79,4 +79,18 @@ class DailyUsageStats(BaseModel):
     total_time_seconds: float
     productive_time_seconds: float
     distracting_time_seconds: float
-    neutral_time_seconds: float 
+    neutral_time_seconds: float
+
+# 每小时使用统计响应模型
+class HourlyUsageSummary(BaseModel):
+    hour: str
+    productive: float
+    neutral: float
+    distracting: float
+
+# 按应用分组的每小时使用统计响应模型
+class HourlyAppUsageSummary(BaseModel):
+    hour: str
+    app_name: str
+    duration_minutes: float
+    productivity_type: ProductivityTypeEnum 

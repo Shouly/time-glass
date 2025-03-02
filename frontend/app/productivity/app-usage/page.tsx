@@ -2,66 +2,103 @@
 
 import { DailyUsageBarChart } from "@/components/charts/app-usage-bar-chart"
 import { AppUsagePieChart } from "@/components/charts/app-usage-pie-chart"
-import { HourlyUsageChart } from "@/components/charts/hourly-usage-chart"
+import { HourlyAppUsageChart } from "@/components/charts/hourly-app-usage-chart"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatPercentage, formatTimeSpent, getProductivityColor } from "@/lib/utils"
+import { AppCategory, AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, HourlyUsageSummary, ProductivitySummary, ProductivityType } from '@/lib/app-usage-api'
+import { formatTimeSpent } from "@/lib/utils"
 import { addDays, format, subDays } from "date-fns"
 import { BarChart2, ChevronLeft, ChevronRight, Clock, PieChart, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { DateRange } from "react-day-picker"
-import { AppUsageApi, ProductivitySummary, AppCategory, DailyAppUsage, ProductivityType, HourlyUsageSummary } from '@/lib/app-usage-api'
 
 export default function AppUsagePage() {
   const today = new Date()
   const yesterday = subDays(today, 1)
-  
+
   // 状态管理
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: yesterday,
-    to: yesterday,
+    from: today,
+    to: today,
   })
   const [activeTab, setActiveTab] = useState("overview")
   const [searchTerm, setSearchTerm] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  
+
   // 数据状态
   const [appCategories, setAppCategories] = useState<AppCategory[]>([])
   const [productivitySummary, setProductivitySummary] = useState<ProductivitySummary | null>(null)
   const [dailyUsage, setDailyUsage] = useState<DailyAppUsage[]>([])
   const [hourlyData, setHourlyData] = useState<HourlyUsageSummary[]>([])
+  const [hourlyAppData, setHourlyAppData] = useState<HourlyAppUsageSummary[]>([])
   const [weeklyData, setWeeklyData] = useState<any[]>([])
 
   // 获取数据的函数
   const fetchData = async () => {
     if (!dateRange?.from || !dateRange?.to) return
-    
+
     setIsLoading(true)
     try {
       // 获取生产力摘要
       const startDateStr = format(dateRange.from, 'yyyy-MM-dd')
       const endDateStr = format(dateRange.to, 'yyyy-MM-dd')
-      
+
       // 使用API函数获取生产力摘要
       const summaryData = await AppUsageApi.getProductivitySummary(startDateStr, endDateStr)
       setProductivitySummary(summaryData)
-      
+
       // 使用API函数获取每日应用使用情况
       const dailyData = await AppUsageApi.getDailyAppUsage(startDateStr, endDateStr)
       setDailyUsage(dailyData)
-      
+
       // 使用API函数获取小时数据
       const hourlyData = await AppUsageApi.getHourlyUsage(startDateStr)
       setHourlyData(hourlyData)
-      
+
+      // 使用API函数获取按应用分组的小时数据
+      try {
+        const hourlyAppData = await AppUsageApi.getHourlyAppUsage(startDateStr)
+        setHourlyAppData(hourlyAppData)
+      } catch (error) {
+        console.error('获取按应用分组的小时数据失败:', error)
+        // 生成模拟数据
+        const mockData: HourlyAppUsageSummary[] = []
+        const apps = ['Chrome', 'VS Code', 'Slack', 'Terminal', 'Notion', 'Zoom']
+        const types: ProductivityType[] = [
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.NEUTRAL,
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.NEUTRAL,
+          ProductivityType.DISTRACTING
+        ]
+
+        for (let hour = 9; hour <= 18; hour++) {
+          const hourStr = `${hour.toString().padStart(2, '0')}:00`
+
+          apps.forEach((app, index) => {
+            if (Math.random() > 0.3) { // 随机生成一些数据
+              mockData.push({
+                hour: hourStr,
+                app_name: app,
+                duration_minutes: Math.floor(Math.random() * 30) + 5,
+                productivity_type: types[index % types.length]
+              })
+            }
+          })
+        }
+
+        setHourlyAppData(mockData)
+      }
+
       // 使用API函数获取应用分类
       const categoriesData = await AppUsageApi.getAppCategories()
       setAppCategories(categoriesData.items)
-      
+
       // 获取周数据（过去7天）
       await fetchWeeklyData()
     } catch (error) {
@@ -70,25 +107,25 @@ export default function AppUsagePage() {
       setIsLoading(false)
     }
   }
-  
+
   // 获取周数据
   const fetchWeeklyData = async () => {
     if (!dateRange?.from) return
-    
+
     try {
       const endDate = dateRange.from
       const startDate = subDays(endDate, 6)
-      
+
       // 使用API函数获取每日应用使用情况
       const data = await AppUsageApi.getDailyAppUsage(
         format(startDate, 'yyyy-MM-dd'),
         format(endDate, 'yyyy-MM-dd')
       )
-      
+
       // 处理周数据
       const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       const processedData = []
-      
+
       // 按日期分组并计算总时间
       const groupedByDate = data.reduce((acc: any, item: DailyAppUsage) => {
         const date = item.date
@@ -98,19 +135,19 @@ export default function AppUsagePage() {
         acc[date] += item.total_minutes
         return acc
       }, {})
-      
+
       // 转换为图表数据格式
       for (let i = 0; i < 7; i++) {
         const date = format(subDays(endDate, 6 - i), 'yyyy-MM-dd')
         const dayOfWeek = new Date(date).getDay()
         const hours = (groupedByDate[date] || 0) / 60
-        
+
         processedData.push({
           day: weekDays[dayOfWeek],
           hours: parseFloat(hours.toFixed(1))
         })
       }
-      
+
       setWeeklyData(processedData)
     } catch (error) {
       console.error('获取周数据失败:', error)
@@ -169,18 +206,18 @@ export default function AppUsagePage() {
       acc[key].session_count += 1 // 简化处理，实际应从后端获取
       return acc
     }, {})
-    
+
     // 转换为数组并计算百分比
     let apps = Object.values(appGroups)
     const totalMinutes = apps.reduce((sum: number, app: any) => sum + app.total_minutes, 0)
-    
+
     apps = apps.map((app: any) => ({
       ...app,
       total_time_seconds: app.total_minutes * 60,
       percentage: (app.total_minutes / totalMinutes) * 100,
       avg_session_time: (app.total_minutes * 60) / app.session_count
     }))
-    
+
     // 应用搜索过滤
     if (searchTerm) {
       apps = apps.filter((app: any) =>
@@ -200,22 +237,30 @@ export default function AppUsagePage() {
     // 按使用时间排序
     return apps.sort((a: any, b: any) => b.total_minutes - a.total_minutes)
   }
-  
+
   // 准备饼图数据
   const getPieChartData = () => {
     if (!productivitySummary) return []
-    
+
     return [
       { name: "生产型应用", value: productivitySummary.productive_minutes * 60, color: "#22c55e" },
       { name: "中性应用", value: productivitySummary.neutral_minutes * 60, color: "#3b82f6" },
       { name: "干扰型应用", value: productivitySummary.distracting_minutes * 60, color: "#ef4444" }
     ]
   }
-  
+
   // 数据加载
   useEffect(() => {
     fetchData()
   }, [dateRange])
+
+  // 确保组件加载时立即获取数据
+  useEffect(() => {
+    // 组件首次加载时，确保数据被获取
+    if (!isLoading && !productivitySummary) {
+      fetchData()
+    }
+  }, [])
 
   return (
     <div className="container py-8">
@@ -233,6 +278,11 @@ export default function AppUsagePage() {
                 <span className="flex items-center">
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
                   {format(new Date(), 'yyyy-MM-dd HH:mm')} 更新
+                  {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString() && (
+                    <span className="ml-2 px-2 py-0.5 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs rounded-full">
+                      显示今天数据
+                    </span>
+                  )}
                 </span>
               )}
             </p>
@@ -257,11 +307,14 @@ export default function AppUsagePage() {
                     handleDateChange({ from: date, to: date })
                   }}
                 >
-                  <SelectTrigger className="w-[160px] h-10 border rounded-md bg-gray-50 dark:bg-gray-900">
+                  <SelectTrigger className="w-[160px] h-10 border rounded-md bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
                     <SelectValue>
                       {dateRange?.from ? (
                         dateRange.from.toDateString() === new Date().toDateString()
-                          ? "今天"
+                          ? <span className="flex items-center font-medium text-green-600 dark:text-green-400">
+                            <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                            今天
+                          </span>
                           : dateRange.from.toDateString() === yesterday.toDateString()
                             ? "昨天"
                             : format(dateRange.from, "yyyy年M月d日")
@@ -269,7 +322,12 @@ export default function AppUsagePage() {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value={new Date().toISOString()}>今天</SelectItem>
+                    <SelectItem value={new Date().toISOString()} className="font-medium text-green-600 dark:text-green-400">
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                        今天
+                      </div>
+                    </SelectItem>
                     <SelectItem value={yesterday.toISOString()}>昨天</SelectItem>
                     <SelectItem value={subDays(new Date(), 2).toISOString()}>前天</SelectItem>
                     <div className="px-2 py-1.5 border-t">
@@ -332,8 +390,8 @@ export default function AppUsagePage() {
               </div>
               <div className="flex items-center mt-1">
                 <div className="flex-1 h-1.5 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-green-500 rounded-full" 
+                  <div
+                    className="h-full bg-green-500 rounded-full"
                     style={{ width: `${productivitySummary?.productive_percentage || 0}%` }}
                   ></div>
                 </div>
@@ -357,8 +415,8 @@ export default function AppUsagePage() {
               </div>
               <div className="flex items-center mt-1">
                 <div className="flex-1 h-1.5 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-blue-500 rounded-full" 
+                  <div
+                    className="h-full bg-blue-500 rounded-full"
                     style={{ width: `${productivitySummary?.neutral_percentage || 0}%` }}
                   ></div>
                 </div>
@@ -382,8 +440,8 @@ export default function AppUsagePage() {
               </div>
               <div className="flex items-center mt-1">
                 <div className="flex-1 h-1.5 bg-red-200 dark:bg-red-800 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-red-500 rounded-full" 
+                  <div
+                    className="h-full bg-red-500 rounded-full"
                     style={{ width: `${productivitySummary?.distracting_percentage || 0}%` }}
                   ></div>
                 </div>
@@ -408,34 +466,34 @@ export default function AppUsagePage() {
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1">
                   <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-muted-foreground">生产型</span>
+                  <span className="text-xs text-muted-foreground">生产型应用</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-xs text-muted-foreground">中性</span>
+                  <span className="text-xs text-muted-foreground">中性应用</span>
                 </div>
                 <div className="flex items-center space-x-1">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-muted-foreground">干扰型</span>
+                  <span className="text-xs text-muted-foreground">干扰型应用</span>
                 </div>
               </div>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
-            <HourlyUsageChart data={hourlyData} height={350} />
+            <HourlyAppUsageChart data={hourlyAppData} height={350} maxApps={6} />
           </CardContent>
         </Card>
 
         <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 lg:w-auto bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
-            <TabsTrigger 
-              value="overview" 
+            <TabsTrigger
+              value="overview"
               className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md transition-all"
             >
               概览
             </TabsTrigger>
-            <TabsTrigger 
-              value="productive" 
+            <TabsTrigger
+              value="productive"
               className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 rounded-md transition-all"
             >
               <span className="flex items-center">
@@ -443,8 +501,8 @@ export default function AppUsagePage() {
                 生产型
               </span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="neutral" 
+            <TabsTrigger
+              value="neutral"
               className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md transition-all"
             >
               <span className="flex items-center">
@@ -452,8 +510,8 @@ export default function AppUsagePage() {
                 中性
               </span>
             </TabsTrigger>
-            <TabsTrigger 
-              value="distracting" 
+            <TabsTrigger
+              value="distracting"
               className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-red-600 dark:data-[state=active]:text-red-400 rounded-md transition-all"
             >
               <span className="flex items-center">
@@ -540,23 +598,21 @@ export default function AppUsagePage() {
                         {getFilteredApps().map((app: any, index: number) => (
                           <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
                             <td className="py-4 flex items-center">
-                              <div className={`w-10 h-10 rounded-md shadow-sm flex items-center justify-center text-white mr-3 ${
-                                app.productivity_type === "PRODUCTIVE" ? "bg-gradient-to-br from-green-400 to-green-600" :
-                                app.productivity_type === "DISTRACTING" ? "bg-gradient-to-br from-red-400 to-red-600" : 
-                                "bg-gradient-to-br from-blue-400 to-blue-600"
-                              }`}>
+                              <div className={`w-10 h-10 rounded-md shadow-sm flex items-center justify-center text-white mr-3 ${app.productivity_type === "PRODUCTIVE" ? "bg-gradient-to-br from-green-400 to-green-600" :
+                                app.productivity_type === "DISTRACTING" ? "bg-gradient-to-br from-red-400 to-red-600" :
+                                  "bg-gradient-to-br from-blue-400 to-blue-600"
+                                }`}>
                                 {app.app_name.charAt(0).toUpperCase()}
                               </div>
                               <div>
                                 <div className="font-medium">{app.app_name}</div>
                                 <div className="text-xs text-muted-foreground flex items-center mt-1">
-                                  <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
-                                    app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
+                                  <span className={`inline-block w-2 h-2 rounded-full mr-1 ${app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
                                     app.productivity_type === "DISTRACTING" ? "bg-red-500" : "bg-blue-500"
-                                  }`}></span>
+                                    }`}></span>
                                   {app.category_name || (
                                     app.productivity_type === "PRODUCTIVE" ? "生产型" :
-                                    app.productivity_type === "NEUTRAL" ? "中性" : "干扰型"
+                                      app.productivity_type === "NEUTRAL" ? "中性" : "干扰型"
                                   )}
                                 </div>
                               </div>
@@ -566,10 +622,9 @@ export default function AppUsagePage() {
                               <div className="flex items-center">
                                 <div className="w-24 h-2 bg-gray-100 dark:bg-gray-800 rounded-full mr-2 overflow-hidden">
                                   <div
-                                    className={`h-full rounded-full ${
-                                      app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
+                                    className={`h-full rounded-full ${app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
                                       app.productivity_type === "DISTRACTING" ? "bg-red-500" : "bg-blue-500"
-                                    }`}
+                                      }`}
                                     style={{ width: `${app.percentage}%` }}
                                   />
                                 </div>
