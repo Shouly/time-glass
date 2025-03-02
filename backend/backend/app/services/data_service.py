@@ -92,10 +92,10 @@ class DataService:
         """
         try:
             # 获取数据库会话
-            from ..db.mysql import SessionLocal
-            db = SessionLocal()
+            from ..db.mysql import AsyncSessionLocal
             
-            try:
+            # 使用异步上下文管理器
+            async with AsyncSessionLocal() as db:
                 # 创建使用分析服务
                 from ..services.usage_analysis_service import UsageAnalysisService
                 usage_analysis_service = UsageAnalysisService(db, self.es_client)
@@ -104,15 +104,6 @@ class DataService:
                 await usage_analysis_service.process_report_for_app_usage(report, report_id)
                 
                 logger.info(f"Processed app usage statistics for report {report_id}")
-                
-            finally:
-                # 确保正确关闭数据库会话
-                if hasattr(db, 'close'):
-                    if callable(db.close):
-                        if asyncio.iscoroutinefunction(db.close):
-                            await db.close()
-                        else:
-                            db.close()
                 
         except Exception as e:
             logger.error(f"Error processing app usage statistics: {e}")

@@ -6,7 +6,7 @@ authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.12"
 fastapi = "^0.104.1"
 uvicorn = "^0.23.2"
 elasticsearch = "^8.9.0"
@@ -17,6 +17,8 @@ requests = "^2.31.0"
 sqlalchemy = "^2.0.38"
 pymysql = "^1.1.1"
 alembic = "^1.14.1"
+aiomysql = "^0.2.0"
+greenlet = "^3.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.3"

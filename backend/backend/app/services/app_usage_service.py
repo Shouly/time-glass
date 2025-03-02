@@ -31,7 +31,7 @@ class AppUsageService:
         existing = result.scalars().first()
 
         if existing:
-            raise ValueError(f"应用类别 '{name}' 已存在")
+            return existing  # 如果已存在，直接返回现有类别，而不是抛出错误
 
         # 创建新类别
         new_category = AppCategory(name=name, productivity_type=productivity_type)
