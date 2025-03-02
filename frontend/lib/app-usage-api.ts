@@ -104,7 +104,7 @@ export async function createAppCategory(category: AppCategoryCreate): Promise<Ap
 }
 
 export async function getAppCategories(
-  page: number = 1, 
+  page: number = 1,
   pageSize: number = 100,
   productivityType?: ProductivityType
 ): Promise<PaginatedResponse<AppCategory>> {
@@ -112,11 +112,11 @@ export async function getAppCategories(
     skip: (page - 1) * pageSize,
     limit: pageSize,
   };
-  
+
   if (productivityType) {
     params.productivity_type = productivityType;
   }
-  
+
   const response = await api.get('/app-usage/categories', { params });
   return response.data;
 }
@@ -156,15 +156,15 @@ export async function getAppUsage(
     skip: (page - 1) * pageSize,
     limit: pageSize,
   };
-  
+
   if (appName) {
     params.app_name = appName;
   }
-  
+
   if (categoryId) {
     params.category_id = categoryId;
   }
-  
+
   const response = await api.get('/app-usage/usage', { params });
   return response.data;
 }
@@ -178,7 +178,7 @@ export async function getProductivitySummary(
     start_date: startDate,
     end_date: endDate,
   };
-  
+
   const response = await api.get('/app-usage/productivity-summary', { params });
   return response.data;
 }
@@ -192,20 +192,8 @@ export async function getDailyAppUsage(
     start_date: startDate,
     end_date: endDate,
   };
-  
-  const response = await api.get('/app-usage/daily-usage', { params });
-  return response.data;
-}
 
-// 小时应用使用统计API函数
-export async function getHourlyUsage(
-  date: string
-): Promise<HourlyUsageSummary[]> {
-  const params = {
-    date: date,
-  };
-  
-  const response = await api.get('/app-usage/hourly-usage', { params });
+  const response = await api.get('/app-usage/daily-usage', { params });
   return response.data;
 }
 
@@ -216,15 +204,24 @@ export async function getHourlyAppUsage(
   const params = {
     date: date,
   };
-  
-  const response = await api.get('/app-usage/hourly-app-usage', { params });
-  return response.data;
-}
 
-// 批量记录应用使用时间
-export async function batchRecordAppUsage(usages: HourlyAppUsageCreate[]): Promise<{ success: boolean; message: string }> {
-  const response = await api.post('/app-usage/usage/batch', { items: usages });
-  return response.data;
+  console.log('调用API: /app-usage/hourly-app-usage，参数:', params);
+  console.log('完整URL:', `${API_BASE_URL}/app-usage/hourly-app-usage?date=${date}`);
+
+  try {
+    const response = await api.get('/app-usage/hourly-app-usage', { params });
+    console.log('API响应状态:', response.status);
+    return response.data;
+  } catch (error) {
+    console.error('API调用失败:', error);
+    if (axios.isAxiosError(error)) {
+      console.error('请求URL:', error.config?.url);
+      console.error('请求参数:', error.config?.params);
+      console.error('响应状态:', error.response?.status);
+      console.error('响应数据:', error.response?.data);
+    }
+    throw error;
+  }
 }
 
 // 导出所有API函数
@@ -238,7 +235,5 @@ export const AppUsageApi = {
   getAppUsage,
   getProductivitySummary,
   getDailyAppUsage,
-  getHourlyUsage,
   getHourlyAppUsage,
-  batchRecordAppUsage,
 }; 
