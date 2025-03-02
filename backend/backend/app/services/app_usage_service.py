@@ -205,8 +205,8 @@ class AppUsageService:
             existing.total_time_seconds += total_time_seconds
             # 更新会话计数 - 假设每次调用代表一个新会话
             existing.session_count += 1
-            # 更新最后修改时间 - 使用北京时间
-            existing.updated_at = datetime.utcnow() + timedelta(hours=8)
+            # 更新最后修改时间
+            existing.updated_at = datetime.utcnow()
             await self.db.commit()
             await self.db.refresh(existing)
             return existing
