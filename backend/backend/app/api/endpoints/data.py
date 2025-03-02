@@ -4,7 +4,9 @@ import logging
 from datetime import datetime
 
 from ...db.elasticsearch import get_es_client
+from ...db.mysql import get_db
 from ...services.data_service import DataService
+from ...services.usage_analysis_service import UsageAnalysisService
 from ...models.data import DataReport, DataReportResponse
 
 router = APIRouter()
@@ -39,4 +41,33 @@ async def report_data(
         
     except Exception as e:
         logger.error(f"Error processing data report: {e}")
-        raise HTTPException(status_code=500, detail=f"Error processing data report: {e}") 
+        raise HTTPException(status_code=500, detail=f"Error processing data report: {e}")
+
+@router.post("/process-app-usage")
+async def process_app_usage(
+    hours_back: int = 24,
+    es_client: AsyncElasticsearch = Depends(get_es_client),
+    db = Depends(get_db)
+):
+    """
+    手动触发处理未处理的应用使用报告
+    
+    Args:
+        hours_back: 处理多少小时前的报告，默认24小时
+    """
+    try:
+        # 创建使用分析服务
+        usage_analysis_service = UsageAnalysisService(db, es_client)
+        
+        # 处理未处理的报告
+        await usage_analysis_service.process_unprocessed_reports(hours_back)
+        
+        return {
+            "status": "success",
+            "message": f"Successfully processed unprocessed app usage reports from the past {hours_back} hours",
+            "processed_at": datetime.utcnow()
+        }
+        
+    except Exception as e:
+        logger.error(f"Error processing app usage reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Error processing app usage reports: {e}") 

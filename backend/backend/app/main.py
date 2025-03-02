@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import asyncio
 
 from .api.api import api_router
 from .core.config import settings
 from .db.elasticsearch import init_es, close_es
+from .services.scheduled_tasks import schedule_tasks
 
 # 配置日志
 logging.basicConfig(
@@ -40,6 +42,11 @@ async def startup_event():
     """应用启动时执行的操作"""
     logger.info("Starting up Time Glass API")
     await init_es()
+    
+    # 启动定时任务
+    if settings.ENABLE_SCHEDULED_TASKS:
+        logger.info("Starting scheduled tasks")
+        asyncio.create_task(schedule_tasks())
 
 @app.on_event("shutdown")
 async def shutdown_event():
