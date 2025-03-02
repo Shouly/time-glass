@@ -238,17 +238,26 @@ class UsageAnalysisService:
             int: 类别ID
         """
         try:
-            # 获取所有应用类别
-            categories, _ = await self.app_usage_service.get_app_categories(limit=1000)
+            # 直接查询精确匹配的类别
+            exact_query = select(AppCategory).where(
+                AppCategory.name.ilike(app_name)
+            )
+            result = await self.db.execute(exact_query)
+            category = result.scalars().first()
             
-            # 尝试精确匹配
-            for category in categories:
-                if category.name.lower() == app_name.lower():
-                    return category.id
+            if category:
+                return category.id
             
             # 尝试部分匹配
-            for category in categories:
-                if category.name.lower() in app_name.lower() or app_name.lower() in category.name.lower():
+            # 由于SQLAlchemy不支持直接的包含查询，我们获取所有类别然后在Python中过滤
+            all_query = select(AppCategory)
+            result = await self.db.execute(all_query)
+            all_categories = result.scalars().all()
+            
+            app_name_lower = app_name.lower()
+            for category in all_categories:
+                category_name_lower = category.name.lower()
+                if category_name_lower in app_name_lower or app_name_lower in category_name_lower:
                     return category.id
             
             # 如果没有匹配，获取默认类别ID
