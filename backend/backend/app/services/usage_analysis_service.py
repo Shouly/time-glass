@@ -4,9 +4,11 @@ from typing import Dict, List, Optional, Tuple, Any
 
 from elasticsearch import AsyncElasticsearch
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from ..models.data import DataReport
 from ..services.app_usage_service import AppUsageService, ProductivityType
+from ..models.app_usage import AppCategory
 from ..core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -249,15 +251,20 @@ class UsageAnalysisService:
                 if category.name.lower() in app_name.lower() or app_name.lower() in category.name.lower():
                     return category.id
             
-            # 如果没有匹配，创建一个新类别
-            default_category = await self._get_or_create_default_category()
-            return default_category
+            # 如果没有匹配，获取默认类别ID
+            default_category_id = await self._get_or_create_default_category()
+            return default_category_id
             
         except Exception as e:
             logger.error(f"Error matching app category for {app_name}: {e}")
-            # 如果出错，返回默认类别
-            default_category = await self._get_or_create_default_category()
-            return default_category
+            # 如果出错，返回默认类别ID
+            try:
+                default_category_id = await self._get_or_create_default_category()
+                return default_category_id
+            except Exception as inner_e:
+                logger.error(f"Error getting default category as fallback: {inner_e}")
+                # 最后的后备方案：返回ID为1的类别
+                return 1
     
     async def _get_or_create_default_category(self) -> int:
         """
@@ -268,11 +275,12 @@ class UsageAnalysisService:
         """
         try:
             # 尝试获取"未分类"类别
-            categories, _ = await self.app_usage_service.get_app_categories()
+            query = select(AppCategory).where(AppCategory.name == "未分类")
+            result = await self.db.execute(query)
+            category = result.scalars().first()
             
-            for category in categories:
-                if category.name == "未分类":
-                    return category.id  # 返回类别ID而不是类别对象
+            if category:
+                return category.id  # 返回类别ID
             
             # 如果不存在，创建默认类别
             default_category = await self.app_usage_service.create_app_category(
@@ -280,7 +288,7 @@ class UsageAnalysisService:
                 productivity_type=ProductivityType.NEUTRAL
             )
             
-            return default_category.id  # 返回类别ID而不是类别对象
+            return default_category.id  # 返回类别ID
             
         except Exception as e:
             logger.error(f"Error getting or creating default category: {e}")
