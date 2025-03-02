@@ -220,21 +220,31 @@ export default function AppUsagePage() {
   return (
     <div className="container py-8">
       <div className="flex flex-col gap-6">
-        <div className="flex justify-between items-center">
-          <div className="flex flex-col gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">应用使用分析</h1>
-            <p className="text-muted-foreground">
-              {isLoading ? "加载中..." : `${format(new Date(), 'yyyy-MM-dd HH:mm')} 更新`}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 p-4 rounded-lg border shadow-sm">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-gray-900 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">应用使用分析</h1>
+            <p className="text-muted-foreground flex items-center">
+              {isLoading ? (
+                <span className="flex items-center">
+                  <span className="inline-block w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-2"></span>
+                  数据加载中...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-2"></span>
+                  {format(new Date(), 'yyyy-MM-dd HH:mm')} 更新
+                </span>
+              )}
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 bg-white dark:bg-gray-800 p-2 rounded-lg shadow-sm border">
             <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handlePrevDay}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
@@ -247,7 +257,7 @@ export default function AppUsagePage() {
                     handleDateChange({ from: date, to: date })
                   }}
                 >
-                  <SelectTrigger className="w-[160px] h-10 border rounded-md">
+                  <SelectTrigger className="w-[160px] h-10 border rounded-md bg-gray-50 dark:bg-gray-900">
                     <SelectValue>
                       {dateRange?.from ? (
                         dateRange.from.toDateString() === new Date().toDateString()
@@ -278,7 +288,7 @@ export default function AppUsagePage() {
                 variant="ghost"
                 size="icon"
                 onClick={handleNextDay}
-                className="h-8 w-8 rounded-full"
+                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                 disabled={dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()}
               >
                 <ChevronRight className="h-4 w-4" />
@@ -289,18 +299,19 @@ export default function AppUsagePage() {
 
         {/* 概览统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-blue-200/30 dark:border-blue-800/30">
               <CardTitle className="text-sm font-medium">总使用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-blue-100/80 dark:bg-blue-800/80 flex items-center justify-center shadow-sm">
                 <Clock className="h-4 w-4 text-blue-600 dark:text-blue-300" />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="text-2xl font-bold">
                 {productivitySummary ? formatTimeSpent(productivitySummary.total_minutes * 60) : "加载中..."}
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1 flex items-center">
+                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
                 {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()
                   ? "今天"
                   : dateRange?.from ? format(dateRange.from, "yyyy年M月d日") : ""}
@@ -308,64 +319,148 @@ export default function AppUsagePage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900 border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-green-200/30 dark:border-green-800/30">
               <CardTitle className="text-sm font-medium">生产型应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-green-100/80 dark:bg-green-800/80 flex items-center justify-center shadow-sm">
                 <BarChart2 className="h-4 w-4 text-green-600 dark:text-green-300" />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="text-2xl font-bold">
                 {productivitySummary ? formatTimeSpent(productivitySummary.productive_minutes * 60) : "加载中..."}
               </div>
-              <p className="text-xs text-muted-foreground">
-                占总时间的 {productivitySummary ? Math.round(productivitySummary.productive_percentage) : 0}%
-              </p>
+              <div className="flex items-center mt-1">
+                <div className="flex-1 h-1.5 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full" 
+                    style={{ width: `${productivitySummary?.productive_percentage || 0}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {productivitySummary ? Math.round(productivitySummary.productive_percentage) : 0}%
+                </span>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900 border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-blue-200/30 dark:border-blue-800/30">
               <CardTitle className="text-sm font-medium">中性应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-blue-100/80 dark:bg-blue-800/80 flex items-center justify-center shadow-sm">
                 <PieChart className="h-4 w-4 text-blue-600 dark:text-blue-300" />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="text-2xl font-bold">
                 {productivitySummary ? formatTimeSpent(productivitySummary.neutral_minutes * 60) : "加载中..."}
               </div>
-              <p className="text-xs text-muted-foreground">
-                占总时间的 {productivitySummary ? Math.round(productivitySummary.neutral_percentage) : 0}%
-              </p>
+              <div className="flex items-center mt-1">
+                <div className="flex-1 h-1.5 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-500 rounded-full" 
+                    style={{ width: `${productivitySummary?.neutral_percentage || 0}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {productivitySummary ? Math.round(productivitySummary.neutral_percentage) : 0}%
+                </span>
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900 border-0 shadow-sm">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-red-200/30 dark:border-red-800/30">
               <CardTitle className="text-sm font-medium">干扰型应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-red-100 dark:bg-red-800 flex items-center justify-center">
+              <div className="h-8 w-8 rounded-full bg-red-100/80 dark:bg-red-800/80 flex items-center justify-center shadow-sm">
                 <Clock className="h-4 w-4 text-red-600 dark:text-red-300" />
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <div className="text-2xl font-bold">
                 {productivitySummary ? formatTimeSpent(productivitySummary.distracting_minutes * 60) : "加载中..."}
               </div>
-              <p className="text-xs text-muted-foreground">
-                占总时间的 {productivitySummary ? Math.round(productivitySummary.distracting_percentage) : 0}%
-              </p>
+              <div className="flex items-center mt-1">
+                <div className="flex-1 h-1.5 bg-red-200 dark:bg-red-800 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-red-500 rounded-full" 
+                    style={{ width: `${productivitySummary?.distracting_percentage || 0}%` }}
+                  ></div>
+                </div>
+                <span className="text-xs text-muted-foreground ml-2">
+                  {productivitySummary ? Math.round(productivitySummary.distracting_percentage) : 0}%
+                </span>
+              </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* 每小时使用图表 - 移到上方 */}
+        <Card className="border shadow-sm bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
+          <CardHeader className="border-b">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="text-xl">每小时使用分布</CardTitle>
+                <CardDescription className="mt-1">
+                  一天中不同时段的应用使用情况，了解您的工作和休息模式
+                </CardDescription>
+              </div>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                  <span className="text-xs text-muted-foreground">生产型</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                  <span className="text-xs text-muted-foreground">中性</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span className="text-xs text-muted-foreground">干扰型</span>
+                </div>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <HourlyUsageChart data={hourlyData} height={350} />
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="overview">概览</TabsTrigger>
-            <TabsTrigger value="productive">生产型</TabsTrigger>
-            <TabsTrigger value="neutral">中性</TabsTrigger>
-            <TabsTrigger value="distracting">干扰型</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 lg:w-auto bg-gray-100 dark:bg-gray-800 p-1 rounded-lg">
+            <TabsTrigger 
+              value="overview" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm rounded-md transition-all"
+            >
+              概览
+            </TabsTrigger>
+            <TabsTrigger 
+              value="productive" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-green-600 dark:data-[state=active]:text-green-400 rounded-md transition-all"
+            >
+              <span className="flex items-center">
+                <span className="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>
+                生产型
+              </span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="neutral" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-blue-600 dark:data-[state=active]:text-blue-400 rounded-md transition-all"
+            >
+              <span className="flex items-center">
+                <span className="w-2 h-2 rounded-full bg-blue-500 mr-1.5"></span>
+                中性
+              </span>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="distracting" 
+              className="data-[state=active]:bg-white dark:data-[state=active]:bg-gray-700 data-[state=active]:shadow-sm data-[state=active]:text-red-600 dark:data-[state=active]:text-red-400 rounded-md transition-all"
+            >
+              <span className="flex items-center">
+                <span className="w-2 h-2 rounded-full bg-red-500 mr-1.5"></span>
+                干扰型
+              </span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -400,19 +495,6 @@ export default function AppUsagePage() {
                 </CardContent>
               </Card>
             </div>
-
-            {/* 每小时使用图表 */}
-            <Card className="border shadow-sm">
-              <CardHeader>
-                <CardTitle>每小时使用分布</CardTitle>
-                <CardDescription>
-                  一天中不同时段的应用使用情况
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HourlyUsageChart data={hourlyData} height={250} />
-              </CardContent>
-            </Card>
           </TabsContent>
 
           {["overview", "productive", "neutral", "distracting"].map((tab) => (
@@ -446,24 +528,32 @@ export default function AppUsagePage() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b">
-                          <th className="text-left py-3 font-medium">应用</th>
-                          <th className="text-left py-3 font-medium">使用时间</th>
-                          <th className="text-left py-3 font-medium">占比</th>
-                          <th className="text-left py-3 font-medium">会话数</th>
-                          <th className="text-left py-3 font-medium">平均会话时长</th>
+                        <tr className="border-b border-gray-200 dark:border-gray-800">
+                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">应用</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">使用时间</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">占比</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">会话数</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">平均会话时长</th>
                         </tr>
                       </thead>
                       <tbody>
                         {getFilteredApps().map((app: any, index: number) => (
-                          <tr key={index} className="border-b hover:bg-muted/50">
-                            <td className="py-3 flex items-center">
-                              <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-md shadow-sm flex items-center justify-center text-gray-500 mr-3">
-                                {app.app_name.charAt(0)}
+                          <tr key={index} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
+                            <td className="py-4 flex items-center">
+                              <div className={`w-10 h-10 rounded-md shadow-sm flex items-center justify-center text-white mr-3 ${
+                                app.productivity_type === "PRODUCTIVE" ? "bg-gradient-to-br from-green-400 to-green-600" :
+                                app.productivity_type === "DISTRACTING" ? "bg-gradient-to-br from-red-400 to-red-600" : 
+                                "bg-gradient-to-br from-blue-400 to-blue-600"
+                              }`}>
+                                {app.app_name.charAt(0).toUpperCase()}
                               </div>
                               <div>
                                 <div className="font-medium">{app.app_name}</div>
-                                <div className="text-xs text-muted-foreground">
+                                <div className="text-xs text-muted-foreground flex items-center mt-1">
+                                  <span className={`inline-block w-2 h-2 rounded-full mr-1 ${
+                                    app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
+                                    app.productivity_type === "DISTRACTING" ? "bg-red-500" : "bg-blue-500"
+                                  }`}></span>
                                   {app.category_name || (
                                     app.productivity_type === "PRODUCTIVE" ? "生产型" :
                                     app.productivity_type === "NEUTRAL" ? "中性" : "干扰型"
@@ -471,10 +561,10 @@ export default function AppUsagePage() {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 font-medium">{formatTimeSpent(app.total_time_seconds)}</td>
-                            <td className="py-3">
+                            <td className="py-4 font-medium">{formatTimeSpent(app.total_time_seconds)}</td>
+                            <td className="py-4">
                               <div className="flex items-center">
-                                <div className="w-16 h-2 bg-gray-100 rounded-full mr-2">
+                                <div className="w-24 h-2 bg-gray-100 dark:bg-gray-800 rounded-full mr-2 overflow-hidden">
                                   <div
                                     className={`h-full rounded-full ${
                                       app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
@@ -483,11 +573,24 @@ export default function AppUsagePage() {
                                     style={{ width: `${app.percentage}%` }}
                                   />
                                 </div>
-                                <span>{app.percentage.toFixed(1)}%</span>
+                                <span className="text-sm">{app.percentage.toFixed(1)}%</span>
                               </div>
                             </td>
-                            <td className="py-3">{app.session_count}</td>
-                            <td className="py-3">{formatTimeSpent(app.avg_session_time)}</td>
+                            <td className="py-4">
+                              <div className="flex items-center">
+                                <div className="bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1 text-sm">
+                                  {app.session_count}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-4">
+                              <div className="font-medium text-sm">
+                                {formatTimeSpent(app.avg_session_time)}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                平均每次使用
+                              </div>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
