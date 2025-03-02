@@ -204,4 +204,75 @@ export async function getProductivityScore(params: ProductivityQueryParams): Pro
 export async function getAppCategories(): Promise<{ id: number, name: string, productivity_type: string }[]> {
   const response = await api.get('/productivity/categories');
   return response.data;
+}
+
+// OCR文本接口
+export interface OcrTextItem {
+  client_id: string;
+  report_id: string;
+  frame_id: number | string;
+  timestamp: string;
+  app_name: string;
+  window_name: string;
+  text: string;
+  focused: boolean;
+  text_length: number;
+  platform?: string;
+  os?: string;
+  os_version?: string;
+  hostname?: string;
+  extracted_at?: string;
+  app_version?: string;
+  reporting_period_start?: string;
+  reporting_period_end?: string;
+}
+
+export interface OcrTextResponse {
+  items: OcrTextItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface OcrTextQueryParams {
+  client_id?: string;
+  app_name?: string;
+  window_name?: string;
+  focused?: boolean;
+  startTime?: string;
+  endTime?: string;
+  page?: number;
+  pageSize?: number;
+  sort_order?: 'asc' | 'desc';
+}
+
+// OCR文本API函数
+export async function getOcrText(params: OcrTextQueryParams): Promise<OcrTextResponse> {
+  const queryParams: Record<string, any> = {
+    ...params,
+    limit: params.pageSize,
+    offset: params.pageSize ? (params.page ? (params.page - 1) * params.pageSize : 0) : 0
+  };
+  
+  // 删除前端特定的参数
+  delete queryParams.page;
+  delete queryParams.pageSize;
+  
+  const response = await api.get('/query/ocr-text', { params: queryParams });
+  return response.data;
+}
+
+export async function getOcrTextApps(clientId?: string): Promise<string[]> {
+  const params = clientId ? { client_id: clientId } : {};
+  const response = await api.get('/query/ocr-text/apps', { params });
+  return response.data;
+}
+
+export async function getOcrTextWindows(clientId?: string, appName?: string): Promise<string[]> {
+  const params: Record<string, string> = {};
+  if (clientId) params.client_id = clientId;
+  if (appName) params.app_name = appName;
+
+  const response = await api.get('/query/ocr-text/windows', { params });
+  return response.data;
 } 

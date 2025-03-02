@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
 
 interface DateRangePickerProps {
   className?: string
@@ -35,6 +36,11 @@ export function DateRangePicker({
   singleDay = false,
 }: DateRangePickerProps) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const [date, setDate] = React.useState<DateRange | undefined>(value)
+
+  React.useEffect(() => {
+    setDate(value)
+  }, [value])
 
   const handlePresetChange = (preset: string) => {
     const today = new Date()
@@ -73,6 +79,13 @@ export function DateRangePicker({
 
     onChange({ from, to })
     setIsOpen(false)
+  }
+
+  const handleDateChange = (newDate: DateRange | undefined) => {
+    setDate(newDate)
+    if (onChange) {
+      onChange(newDate)
+    }
   }
 
   return (
@@ -114,7 +127,7 @@ export function DateRangePicker({
             {singleDay ? (
               <div className="p-3">
                 <DayPickerSingle 
-                  selected={value?.from}
+                  selected={date?.from}
                   onSelect={(date) => {
                     if (date) {
                       onChange({ from: date, to: date });
@@ -125,14 +138,13 @@ export function DateRangePicker({
               </div>
             ) : (
               <div className="p-3">
-                <DayPickerRange
-                  selected={value}
-                  onSelect={(range) => {
-                    onChange(range);
-                    if (range?.from && range?.to) {
-                      setIsOpen(false);
-                    }
-                  }}
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={handleDateChange}
+                  numberOfMonths={2}
                 />
               </div>
             )}
