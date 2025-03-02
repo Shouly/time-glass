@@ -49,13 +49,9 @@ class QueryService:
             if start_time or end_time:
                 time_range = {}
                 if start_time:
-                    # 将UTC时间转换为北京时间（UTC+8）
-                    beijing_start_time = start_time + timedelta(hours=8)
-                    time_range["gte"] = beijing_start_time.isoformat()
+                    time_range["gte"] = start_time.isoformat()
                 if end_time:
-                    # 将UTC时间转换为北京时间（UTC+8）
-                    beijing_end_time = end_time + timedelta(hours=8)
-                    time_range["lte"] = beijing_end_time.isoformat()
+                    time_range["lte"] = end_time.isoformat()
                 query["bool"]["must"].append({"range": {"timestamp": time_range}})
             
             # 添加应用名称过滤

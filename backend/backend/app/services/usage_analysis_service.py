@@ -45,9 +45,6 @@ class UsageAnalysisService:
                 await self.app_usage_service.batch_record_hourly_app_usage(
                     hourly_usage_records
                 )
-
-                await self._mark_report_as_processed(report_id)
-
             logger.info(f"Successfully processed app usage data for report {report_id}")
 
         except Exception as e:
@@ -346,42 +343,6 @@ class UsageAnalysisService:
             # 如果出错，返回ID为1的类别（假设总是存在）
             return 1
 
-    async def _mark_report_as_processed(self, report_id: str):
-        """
-        标记报告为已处理
-
-        Args:
-            report_id: 报告ID
-        """
-        try:
-            # 构建查询
-            query = {"bool": {"must": [{"term": {"report_id": report_id}}]}}
-
-            # 执行查询
-            indices = f"{settings.ES_INDEX_PREFIX}-data-*"
-            result = await self.es_client.search(index=indices, query=query, size=1)
-
-            # 检查是否找到报告
-            if result["hits"]["total"]["value"] > 0:
-                # 获取文档ID和索引
-                doc_id = result["hits"]["hits"][0]["_id"]
-                index = result["hits"]["hits"][0]["_index"]
-
-                # 更新文档
-                await self.es_client.update(
-                    index=index,
-                    id=doc_id,
-                    doc={
-                        "app_usage_processed": True,
-                        "app_usage_processed_at": datetime.utcnow().isoformat(),
-                    },
-                )
-
-                logger.info(f"Marked report {report_id} as processed")
-
-        except Exception as e:
-            logger.error(f"Error marking report {report_id} as processed: {e}")
-
     async def recalculate_hourly_statistics(
         self, hours_back: int = 24, client_id: str = None
     ):
@@ -431,9 +392,7 @@ class UsageAnalysisService:
                 # 提取并处理UI监控数据
                 app_usage_data = []
                 for item in ui_data["items"]:
-                    # ES中的时间戳格式如 "Mar 2, 2025 @ 15:20:24.000"，直接是北京时间
                     timestamp_str = item["timestamp"]
-
                     # 解析时间戳
                     try:
                         if isinstance(timestamp_str, str):
@@ -466,7 +425,7 @@ class UsageAnalysisService:
 
                     app_usage_data.append(
                         {
-                            "timestamp": timestamp,  # 这里的timestamp是北京时间
+                            "timestamp": timestamp + timedelta(hours=8),  # 这里的timestamp是北京时间
                             "app_name": item["app"],
                             "window_name": item.get("window", ""),
                             "duration": 0,  # 初始化持续时间为0
@@ -518,12 +477,6 @@ class UsageAnalysisService:
             List[str]: 客户端ID列表
         """
         try:
-            # 注意：ES中的时间戳直接是北京时间，而start_time和end_time是UTC时间
-            # 我们需要将UTC时间转换为北京时间进行比较
-
-            # 将UTC时间转换为北京时间（UTC+8）
-            beijing_start_time = start_time + timedelta(hours=8)
-            beijing_end_time = end_time + timedelta(hours=8)
 
             # 构建查询
             query = {
@@ -532,8 +485,8 @@ class UsageAnalysisService:
                         {
                             "range": {
                                 "timestamp": {
-                                    "gte": beijing_start_time.isoformat(),
-                                    "lte": beijing_end_time.isoformat(),
+                                    "gte": start_time.isoformat(),
+                                    "lte": end_time.isoformat(),
                                 }
                             }
                         }
@@ -568,6 +521,7 @@ class UsageAnalysisService:
                 for bucket in result["aggregations"]["client_ids"]["buckets"]:
                     client_ids.append(bucket["key"])
 
+            print(client_ids)
             return client_ids
 
         except Exception as e:
