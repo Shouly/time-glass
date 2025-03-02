@@ -81,6 +81,14 @@ export interface DailyAppUsage {
   total_minutes: number;
 }
 
+// 小时应用使用统计接口
+export interface HourlyUsageSummary {
+  hour: string;
+  productive: number;
+  neutral: number;
+  distracting: number;
+}
+
 // 应用类别API函数
 export async function createAppCategory(category: AppCategoryCreate): Promise<AppCategory> {
   const response = await api.post('/app-usage/categories', category);
@@ -181,6 +189,18 @@ export async function getDailyAppUsage(
   return response.data;
 }
 
+// 小时应用使用统计API函数
+export async function getHourlyUsage(
+  date: string
+): Promise<HourlyUsageSummary[]> {
+  const params = {
+    date: date,
+  };
+  
+  const response = await api.get('/app-usage/hourly-usage', { params });
+  return response.data;
+}
+
 // 批量记录应用使用时间
 export async function batchRecordAppUsage(usages: HourlyAppUsageCreate[]): Promise<{ success: boolean; message: string }> {
   const response = await api.post('/app-usage/usage/batch', { items: usages });
@@ -198,5 +218,6 @@ export const AppUsageApi = {
   getAppUsage,
   getProductivitySummary,
   getDailyAppUsage,
+  getHourlyUsage,
   batchRecordAppUsage,
 }; 

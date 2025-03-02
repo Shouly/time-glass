@@ -8,7 +8,7 @@ interface HourlyUsageChartProps {
     hour: string
     productive: number
     neutral: number
-    social: number
+    distracting: number
   }>
   height?: number
 }
@@ -51,7 +51,7 @@ export function HourlyUsageChart({ data, height = 300 }: HourlyUsageChartProps) 
           }
         },
         legend: {
-          data: ['效率与财务', '其他', '社交'],
+          data: ['效率与财务', '其他', '干扰'],
           bottom: 0,
           itemWidth: 12,
           itemHeight: 12,
@@ -127,7 +127,7 @@ export function HourlyUsageChart({ data, height = 300 }: HourlyUsageChartProps) 
             data: data.map(item => item.neutral)
           },
           {
-            name: '社交',
+            name: '干扰',
             type: 'bar',
             stack: 'total',
             emphasis: {
@@ -136,7 +136,7 @@ export function HourlyUsageChart({ data, height = 300 }: HourlyUsageChartProps) 
             itemStyle: {
               color: '#ef4444'
             },
-            data: data.map(item => item.social)
+            data: data.map(item => item.distracting)
           }
         ]
       }

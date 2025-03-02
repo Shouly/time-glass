@@ -9,229 +9,213 @@ import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { formatTimeSpent } from "@/lib/utils"
-import { addDays, format } from "date-fns"
+import { formatPercentage, formatTimeSpent, getProductivityColor } from "@/lib/utils"
+import { addDays, format, subDays } from "date-fns"
 import { BarChart2, ChevronLeft, ChevronRight, Clock, PieChart, Search } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { DateRange } from "react-day-picker"
-
-// 模拟数据
-const mockAppUsageData = {
-  total_time_seconds: 28560, // 7小时56分钟
-  apps: [
-    {
-      app_name: "Cursor",
-      total_time_seconds: 19380, // 5小时23分钟
-      percentage: 67.86,
-      session_count: 12,
-      avg_session_time: 1615,
-      productivity_type: "productive",
-      icon_path: "https://cursor.sh/apple-touch-icon.png"
-    },
-    {
-      app_name: "Arc",
-      total_time_seconds: 4080, // 1小时8分钟
-      percentage: 14.29,
-      session_count: 8,
-      avg_session_time: 510,
-      productivity_type: "productive",
-      icon_path: "https://arc.net/favicon.ico"
-    },
-    {
-      app_name: "iTerm",
-      total_time_seconds: 2100, // 35分钟
-      percentage: 7.35,
-      session_count: 15,
-      avg_session_time: 140,
-      productivity_type: "productive",
-      icon_path: "https://iterm2.com/favicon.ico"
-    },
-    {
-      app_name: "DB Browser for SQLite",
-      total_time_seconds: 1080, // 18分钟
-      percentage: 3.78,
-      session_count: 3,
-      avg_session_time: 360,
-      productivity_type: "productive"
-    },
-    {
-      app_name: "Sublime Text",
-      total_time_seconds: 240, // 4分钟
-      percentage: 0.84,
-      session_count: 2,
-      avg_session_time: 120,
-      productivity_type: "productive",
-      icon_path: "https://www.sublimetext.com/favicon.ico"
-    },
-    {
-      app_name: "系统设置",
-      total_time_seconds: 120, // 2分钟
-      percentage: 0.42,
-      session_count: 1,
-      avg_session_time: 120,
-      productivity_type: "neutral"
-    },
-    {
-      app_name: "钉钉",
-      total_time_seconds: 60, // 1分钟
-      percentage: 0.21,
-      session_count: 2,
-      avg_session_time: 30,
-      productivity_type: "neutral",
-      icon_path: "https://img.alicdn.com/imgextra/i4/O1CN01XQpsmx1EUAr9NAqja_!!6000000000354-73-tps-64-64.ico"
-    },
-    {
-      app_name: "访达",
-      total_time_seconds: 60, // 1分钟
-      percentage: 0.21,
-      session_count: 3,
-      avg_session_time: 20,
-      productivity_type: "neutral"
-    },
-    {
-      app_name: "活动监视器",
-      total_time_seconds: 40, // 40秒
-      percentage: 0.14,
-      session_count: 1,
-      avg_session_time: 40,
-      productivity_type: "neutral"
-    }
-  ],
-  categories: [
-    {
-      category: "productive",
-      total_time_seconds: 26880, // 7小时7分钟
-      percentage: 94.12,
-      apps: ["Cursor", "Arc", "iTerm", "DB Browser for SQLite", "Sublime Text"]
-    },
-    {
-      category: "neutral",
-      total_time_seconds: 1380, // 23分钟
-      percentage: 4.83,
-      apps: ["系统设置", "访达", "活动监视器", "钉钉"]
-    },
-    {
-      category: "distracting",
-      total_time_seconds: 39, // 39秒
-      percentage: 0.14,
-      apps: ["社交媒体"]
-    }
-  ]
-};
-
-// 模拟每日使用数据
-const mockDailyData = [
-  { day: "日", hours: 0 },
-  { day: "一", hours: 7.2 },
-  { day: "二", hours: 7.8 },
-  { day: "三", hours: 8.1 },
-  { day: "四", hours: 7.5 },
-  { day: "五", hours: 8.9 },
-  { day: "六", hours: 7.93 }
-];
-
-// 模拟每小时使用数据
-const mockHourlyData = Array.from({ length: 24 }, (_, i) => {
-  let minutes = 0;
-
-  // 模拟工作时间段的使用情况
-  if (i >= 9 && i <= 18) {
-    minutes = Math.floor(Math.random() * 40) + 20;
-  } else if (i >= 19 && i <= 22) {
-    minutes = Math.floor(Math.random() * 20);
-  }
-
-  return {
-    hour: `${i}时`,
-    productive: i >= 12 && i <= 18 ? minutes : 0,
-    neutral: i >= 9 && i <= 20 ? Math.floor(Math.random() * 5) : 0,
-    social: i >= 12 && i <= 22 ? Math.floor(Math.random() * 2) : 0
-  };
-});
-
-// 设置12-18点的数据更符合图片
-mockHourlyData[12].productive = 45;
-mockHourlyData[13].productive = 55;
-mockHourlyData[14].productive = 55;
-mockHourlyData[15].productive = 40;
-mockHourlyData[16].productive = 50;
-mockHourlyData[17].productive = 50;
-mockHourlyData[18].productive = 20;
-mockHourlyData[19].productive = 40;
-mockHourlyData[20].productive = 15;
-
-// 饼图数据
-const pieChartData = [
-  { name: "生产型应用", value: 26880, color: "#22c55e" },
-  { name: "中性应用", value: 1380, color: "#3b82f6" },
-  { name: "干扰型应用", value: 39, color: "#ef4444" }
-];
+import { AppUsageApi, ProductivitySummary, AppCategory, DailyAppUsage, ProductivityType, HourlyUsageSummary } from '@/lib/app-usage-api'
 
 export default function AppUsagePage() {
-  const today = new Date();
+  const today = new Date()
+  const yesterday = subDays(today, 1)
+  
+  // 状态管理
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: today,
-    to: today,
+    from: yesterday,
+    to: yesterday,
   })
-
-  const [appUsageData] = useState(mockAppUsageData)
   const [activeTab, setActiveTab] = useState("overview")
   const [searchTerm, setSearchTerm] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  
+  // 数据状态
+  const [appCategories, setAppCategories] = useState<AppCategory[]>([])
+  const [productivitySummary, setProductivitySummary] = useState<ProductivitySummary | null>(null)
+  const [dailyUsage, setDailyUsage] = useState<DailyAppUsage[]>([])
+  const [hourlyData, setHourlyData] = useState<HourlyUsageSummary[]>([])
+  const [weeklyData, setWeeklyData] = useState<any[]>([])
 
-  // 模拟日期切换
+  // 获取数据的函数
+  const fetchData = async () => {
+    if (!dateRange?.from || !dateRange?.to) return
+    
+    setIsLoading(true)
+    try {
+      // 获取生产力摘要
+      const startDateStr = format(dateRange.from, 'yyyy-MM-dd')
+      const endDateStr = format(dateRange.to, 'yyyy-MM-dd')
+      
+      // 使用API函数获取生产力摘要
+      const summaryData = await AppUsageApi.getProductivitySummary(startDateStr, endDateStr)
+      setProductivitySummary(summaryData)
+      
+      // 使用API函数获取每日应用使用情况
+      const dailyData = await AppUsageApi.getDailyAppUsage(startDateStr, endDateStr)
+      setDailyUsage(dailyData)
+      
+      // 使用API函数获取小时数据
+      const hourlyData = await AppUsageApi.getHourlyUsage(startDateStr)
+      setHourlyData(hourlyData)
+      
+      // 使用API函数获取应用分类
+      const categoriesData = await AppUsageApi.getAppCategories()
+      setAppCategories(categoriesData.items)
+      
+      // 获取周数据（过去7天）
+      await fetchWeeklyData()
+    } catch (error) {
+      console.error('获取数据失败:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  // 获取周数据
+  const fetchWeeklyData = async () => {
+    if (!dateRange?.from) return
+    
+    try {
+      const endDate = dateRange.from
+      const startDate = subDays(endDate, 6)
+      
+      // 使用API函数获取每日应用使用情况
+      const data = await AppUsageApi.getDailyAppUsage(
+        format(startDate, 'yyyy-MM-dd'),
+        format(endDate, 'yyyy-MM-dd')
+      )
+      
+      // 处理周数据
+      const weekDays = ['日', '一', '二', '三', '四', '五', '六']
+      const processedData = []
+      
+      // 按日期分组并计算总时间
+      const groupedByDate = data.reduce((acc: any, item: DailyAppUsage) => {
+        const date = item.date
+        if (!acc[date]) {
+          acc[date] = 0
+        }
+        acc[date] += item.total_minutes
+        return acc
+      }, {})
+      
+      // 转换为图表数据格式
+      for (let i = 0; i < 7; i++) {
+        const date = format(subDays(endDate, 6 - i), 'yyyy-MM-dd')
+        const dayOfWeek = new Date(date).getDay()
+        const hours = (groupedByDate[date] || 0) / 60
+        
+        processedData.push({
+          day: weekDays[dayOfWeek],
+          hours: parseFloat(hours.toFixed(1))
+        })
+      }
+      
+      setWeeklyData(processedData)
+    } catch (error) {
+      console.error('获取周数据失败:', error)
+    }
+  }
+
+  // 日期变更处理
   const handleDateChange = (newDateRange: DateRange | undefined) => {
-    setDateRange(newDateRange);
-    // 在实际应用中，这里会触发数据重新加载
+    setDateRange(newDateRange)
   }
 
   // 日期导航
   const handlePrevDay = () => {
     if (dateRange?.from) {
-      const prevDay = addDays(dateRange.from, -1);
+      const prevDay = subDays(dateRange.from, 1)
       setDateRange({
         from: prevDay,
         to: prevDay
-      });
+      })
     }
   }
 
   const handleNextDay = () => {
     if (dateRange?.from) {
-      const nextDay = addDays(dateRange.from, 1);
-      const today = new Date();
+      const nextDay = addDays(dateRange.from, 1)
+      const today = new Date()
 
       // 不允许选择未来日期
       if (nextDay <= today) {
         setDateRange({
           from: nextDay,
           to: nextDay
-        });
+        })
       }
     }
   }
 
   // 过滤应用列表
   const getFilteredApps = () => {
-    if (!appUsageData) return []
+    if (!dailyUsage) return []
 
-    let filtered = appUsageData.apps;
-
+    // 按应用名称分组
+    const appGroups = dailyUsage.reduce((acc: any, item: DailyAppUsage) => {
+      const key = item.app_name
+      if (!acc[key]) {
+        acc[key] = {
+          app_name: item.app_name,
+          category_id: item.category_id,
+          category_name: item.category_name,
+          productivity_type: item.productivity_type,
+          total_minutes: 0,
+          session_count: 0 // 假设会话数据，实际应从后端获取
+        }
+      }
+      acc[key].total_minutes += item.total_minutes
+      acc[key].session_count += 1 // 简化处理，实际应从后端获取
+      return acc
+    }, {})
+    
+    // 转换为数组并计算百分比
+    let apps = Object.values(appGroups)
+    const totalMinutes = apps.reduce((sum: number, app: any) => sum + app.total_minutes, 0)
+    
+    apps = apps.map((app: any) => ({
+      ...app,
+      total_time_seconds: app.total_minutes * 60,
+      percentage: (app.total_minutes / totalMinutes) * 100,
+      avg_session_time: (app.total_minutes * 60) / app.session_count
+    }))
+    
+    // 应用搜索过滤
     if (searchTerm) {
-      filtered = filtered.filter(app =>
+      apps = apps.filter((app: any) =>
         app.app_name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      )
     }
 
+    // 按标签过滤
     if (activeTab === "productive") {
-      filtered = filtered.filter(app => app.productivity_type === "productive")
-    } else if (activeTab === "distracting") {
-      filtered = filtered.filter(app => app.productivity_type === "DISTRACTING")
+      apps = apps.filter((app: any) => app.productivity_type === "PRODUCTIVE")
     } else if (activeTab === "neutral") {
-      filtered = filtered.filter(app => app.productivity_type === "neutral")
+      apps = apps.filter((app: any) => app.productivity_type === "NEUTRAL")
+    } else if (activeTab === "distracting") {
+      apps = apps.filter((app: any) => app.productivity_type === "DISTRACTING")
     }
 
-    return filtered;
+    // 按使用时间排序
+    return apps.sort((a: any, b: any) => b.total_minutes - a.total_minutes)
   }
+  
+  // 准备饼图数据
+  const getPieChartData = () => {
+    if (!productivitySummary) return []
+    
+    return [
+      { name: "生产型应用", value: productivitySummary.productive_minutes * 60, color: "#22c55e" },
+      { name: "中性应用", value: productivitySummary.neutral_minutes * 60, color: "#3b82f6" },
+      { name: "干扰型应用", value: productivitySummary.distracting_minutes * 60, color: "#ef4444" }
+    ]
+  }
+  
+  // 数据加载
+  useEffect(() => {
+    fetchData()
+  }, [dateRange])
 
   return (
     <div className="container py-8">
@@ -240,7 +224,7 @@ export default function AppUsagePage() {
           <div className="flex flex-col gap-2">
             <h1 className="text-3xl font-bold tracking-tight">应用使用分析</h1>
             <p className="text-muted-foreground">
-              今天 21:05 更新
+              {isLoading ? "加载中..." : `${format(new Date(), 'yyyy-MM-dd HH:mm')} 更新`}
             </p>
           </div>
 
@@ -259,8 +243,8 @@ export default function AppUsagePage() {
                 <Select
                   value={dateRange?.from?.toISOString()}
                   onValueChange={(value) => {
-                    const date = new Date(value);
-                    handleDateChange({ from: date, to: date });
+                    const date = new Date(value)
+                    handleDateChange({ from: date, to: date })
                   }}
                 >
                   <SelectTrigger className="w-[160px] h-10 border rounded-md">
@@ -268,14 +252,16 @@ export default function AppUsagePage() {
                       {dateRange?.from ? (
                         dateRange.from.toDateString() === new Date().toDateString()
                           ? "今天"
-                          : format(dateRange.from, "yyyy年M月d日")
+                          : dateRange.from.toDateString() === yesterday.toDateString()
+                            ? "昨天"
+                            : format(dateRange.from, "yyyy年M月d日")
                       ) : "选择日期"}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={new Date().toISOString()}>今天</SelectItem>
-                    <SelectItem value={addDays(new Date(), -1).toISOString()}>昨天</SelectItem>
-                    <SelectItem value={addDays(new Date(), -2).toISOString()}>前天</SelectItem>
+                    <SelectItem value={yesterday.toISOString()}>昨天</SelectItem>
+                    <SelectItem value={subDays(new Date(), 2).toISOString()}>前天</SelectItem>
                     <div className="px-2 py-1.5 border-t">
                       <DateRangePicker
                         value={dateRange}
@@ -312,7 +298,7 @@ export default function AppUsagePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatTimeSpent(appUsageData.total_time_seconds)}
+                {productivitySummary ? formatTimeSpent(productivitySummary.total_minutes * 60) : "加载中..."}
               </div>
               <p className="text-xs text-muted-foreground">
                 {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()
@@ -331,10 +317,10 @@ export default function AppUsagePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatTimeSpent(appUsageData.categories[0].total_time_seconds)}
+                {productivitySummary ? formatTimeSpent(productivitySummary.productive_minutes * 60) : "加载中..."}
               </div>
               <p className="text-xs text-muted-foreground">
-                占总时间的 {Math.round(appUsageData.categories[0].percentage)}%
+                占总时间的 {productivitySummary ? Math.round(productivitySummary.productive_percentage) : 0}%
               </p>
             </CardContent>
           </Card>
@@ -348,10 +334,10 @@ export default function AppUsagePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatTimeSpent(appUsageData.categories[1].total_time_seconds)}
+                {productivitySummary ? formatTimeSpent(productivitySummary.neutral_minutes * 60) : "加载中..."}
               </div>
               <p className="text-xs text-muted-foreground">
-                占总时间的 {Math.round(appUsageData.categories[1].percentage)}%
+                占总时间的 {productivitySummary ? Math.round(productivitySummary.neutral_percentage) : 0}%
               </p>
             </CardContent>
           </Card>
@@ -365,10 +351,10 @@ export default function AppUsagePage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatTimeSpent(appUsageData.categories[2].total_time_seconds)}
+                {productivitySummary ? formatTimeSpent(productivitySummary.distracting_minutes * 60) : "加载中..."}
               </div>
               <p className="text-xs text-muted-foreground">
-                占总时间的 {Math.round(appUsageData.categories[2].percentage)}%
+                占总时间的 {productivitySummary ? Math.round(productivitySummary.distracting_percentage) : 0}%
               </p>
             </CardContent>
           </Card>
@@ -377,9 +363,9 @@ export default function AppUsagePage() {
         <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-4 lg:w-auto">
             <TabsTrigger value="overview">概览</TabsTrigger>
-            <TabsTrigger value="productive">效率与财务</TabsTrigger>
-            <TabsTrigger value="neutral">其他</TabsTrigger>
-            <TabsTrigger value="distracting">社交</TabsTrigger>
+            <TabsTrigger value="productive">生产型</TabsTrigger>
+            <TabsTrigger value="neutral">中性</TabsTrigger>
+            <TabsTrigger value="distracting">干扰型</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
@@ -393,7 +379,7 @@ export default function AppUsagePage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <DailyUsageBarChart data={mockDailyData} height={250} />
+                  <DailyUsageBarChart data={weeklyData} height={250} />
                 </CardContent>
               </Card>
 
@@ -407,8 +393,8 @@ export default function AppUsagePage() {
                 </CardHeader>
                 <CardContent>
                   <AppUsagePieChart
-                    data={pieChartData}
-                    totalTime={appUsageData.total_time_seconds}
+                    data={getPieChartData()}
+                    totalTime={productivitySummary ? productivitySummary.total_minutes * 60 : 0}
                     height={250}
                   />
                 </CardContent>
@@ -424,7 +410,7 @@ export default function AppUsagePage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <HourlyUsageChart data={mockHourlyData} height={250} />
+                <HourlyUsageChart data={hourlyData} height={250} />
               </CardContent>
             </Card>
           </TabsContent>
@@ -435,9 +421,9 @@ export default function AppUsagePage() {
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
                     <CardTitle>
-                      {tab === "overview" ? "显示App" :
-                        tab === "productive" ? "效率与财务" :
-                          tab === "neutral" ? "其他" : "干扰型"}
+                      {tab === "overview" ? "所有应用" :
+                        tab === "productive" ? "生产型应用" :
+                          tab === "neutral" ? "中性应用" : "干扰型应用"}
                     </CardTitle>
                     <CardDescription>
                       {tab === "overview" ? "所有应用的使用情况" :
@@ -469,21 +455,19 @@ export default function AppUsagePage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {getFilteredApps().map((app, index) => (
+                        {getFilteredApps().map((app: any, index: number) => (
                           <tr key={index} className="border-b hover:bg-muted/50">
                             <td className="py-3 flex items-center">
-                              {app.icon_path ? (
-                                <img src={app.icon_path} alt={app.app_name} className="w-8 h-8 mr-3 rounded-md shadow-sm" />
-                              ) : (
-                                <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-md shadow-sm flex items-center justify-center text-gray-500 mr-3">
-                                  {app.app_name.charAt(0)}
-                                </div>
-                              )}
+                              <div className="w-8 h-8 bg-gradient-to-br from-gray-100 to-gray-200 rounded-md shadow-sm flex items-center justify-center text-gray-500 mr-3">
+                                {app.app_name.charAt(0)}
+                              </div>
                               <div>
                                 <div className="font-medium">{app.app_name}</div>
                                 <div className="text-xs text-muted-foreground">
-                                  {app.productivity_type === "productive" ? "效率与财务" :
-                                    app.productivity_type === "neutral" ? "其他" : "社交"}
+                                  {app.category_name || (
+                                    app.productivity_type === "PRODUCTIVE" ? "生产型" :
+                                    app.productivity_type === "NEUTRAL" ? "中性" : "干扰型"
+                                  )}
                                 </div>
                               </div>
                             </td>
@@ -492,9 +476,10 @@ export default function AppUsagePage() {
                               <div className="flex items-center">
                                 <div className="w-16 h-2 bg-gray-100 rounded-full mr-2">
                                   <div
-                                    className={`h-full rounded-full ${app.productivity_type === "productive" ? "bg-green-500" :
+                                    className={`h-full rounded-full ${
+                                      app.productivity_type === "PRODUCTIVE" ? "bg-green-500" :
                                       app.productivity_type === "DISTRACTING" ? "bg-red-500" : "bg-blue-500"
-                                      }`}
+                                    }`}
                                     style={{ width: `${app.percentage}%` }}
                                   />
                                 </div>
