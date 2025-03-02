@@ -29,17 +29,15 @@ class UsageAnalysisService:
             report_id: 报告ID
         """
         try:
-            # 1. 提取报告中的时间范围
-            start_time = report.metadata.reportingPeriod.start
-            end_time = report.metadata.reportingPeriod.end
+            # 1. 提取报告client_id
             client_id = report.clientId
 
-            # 2. 从报告中提取UI监控数据
-            app_usage_data = self._extract_app_usage_from_ui_monitoring(report)
+            # 2. 从报告中提取OCR文本数据
+            app_usage_data = self._extract_app_usage_from_ocr_text(report)
 
             # 3. 生成小时级别的应用使用统计
             hourly_usage_records = await self._generate_hourly_usage_records(
-                client_id, start_time, end_time, app_usage_data
+                client_id, app_usage_data
             )
 
             # 4. 批量保存应用使用统计
@@ -48,7 +46,6 @@ class UsageAnalysisService:
                     hourly_usage_records
                 )
 
-                # 5. 标记报告为已处理
                 await self._mark_report_as_processed(report_id)
 
             logger.info(f"Successfully processed app usage data for report {report_id}")
@@ -57,9 +54,9 @@ class UsageAnalysisService:
             logger.error(f"Error processing app usage data for report {report_id}: {e}")
             raise
 
-    def _extract_app_usage_from_ui_monitoring(self, report: DataReport) -> List[Dict]:
+    def _extract_app_usage_from_ocr_text(self, report: DataReport) -> List[Dict]:
         """
-        从UI监控数据中提取应用使用信息
+        从OCR文本数据中提取应用使用信息
 
         Args:
             report: 数据报告对象
@@ -69,17 +66,18 @@ class UsageAnalysisService:
         """
         app_usage_data = []
 
-        # 从UI监控数据中提取
-        for ui_item in report.data.uiMonitoring:
-            app_usage_data.append(
-                {
-                    "timestamp": ui_item.timestamp + timedelta(hours=8),
-                    "app_name": ui_item.app,
-                    "window_name": ui_item.window,
-                    "duration": 0,  # 初始化持续时间为0
-                    "is_active": True,  # 假设所有记录的UI都是活跃的
-                }
-            )
+        # 从OCR文本数据中提取
+        for frame in report.data.frames:
+            if hasattr(frame, "ocr_text") and frame.ocr_text:
+                app_usage_data.append(
+                    {
+                        "timestamp": frame.timestamp + timedelta(hours=8),
+                        "app_name": frame.ocr_text.app_name,
+                        "window_name": frame.ocr_text.window_name,
+                        "duration": 0,  # 初始化持续时间为0
+                        "is_active": frame.ocr_text.focused,  # 使用OCR文本中的focused字段
+                    }
+                )
 
         # 计算每个应用的使用时间
         app_usage_data = self._calculate_app_usage_duration(app_usage_data)
@@ -88,7 +86,7 @@ class UsageAnalysisService:
 
     def _calculate_app_usage_duration(self, app_usage_data: List[Dict]) -> List[Dict]:
         """
-        计算应用使用时间
+        计算应用使用时间，按时间顺序处理，遇到应用变化时重新计时
 
         Args:
             app_usage_data: 应用使用数据列表
@@ -99,11 +97,19 @@ class UsageAnalysisService:
         # 按时间戳排序
         app_usage_data.sort(key=lambda x: x["timestamp"])
 
-        # 如果只有一条记录，无法计算持续时间
+        # 如果没有记录或只有一条记录，直接返回
         if len(app_usage_data) <= 1:
+            if app_usage_data:
+                app_usage_data[0]["duration"] = 5  # 默认5秒
             return app_usage_data
 
-        # 计算每条记录的持续时间（到下一条记录的时间差）
+        # 定义最大时间间隔（秒）
+        max_interval = 60
+
+        # 定义会话超时时间（秒）
+        session_timeout = 300  # 5分钟
+
+        # 遍历记录计算持续时间
         for i in range(len(app_usage_data) - 1):
             current = app_usage_data[i]
             next_record = app_usage_data[i + 1]
@@ -113,25 +119,43 @@ class UsageAnalysisService:
                 next_record["timestamp"] - current["timestamp"]
             ).total_seconds()
 
-            # 设置持续时间
-            current["duration"] = time_diff
+            # 如果应用名称改变或时间间隔过大，当前记录的持续时间设为默认值或较小值
+            if (
+                current["app_name"] != next_record["app_name"]
+                or time_diff > session_timeout
+            ):
+                current["duration"] = min(
+                    5, time_diff
+                )  # 默认5秒或实际时间差（取较小值）
+            else:
+                # 同一应用内的连续记录，使用实际时间差（但限制最大值）
+                current["duration"] = min(time_diff, max_interval)
 
-        # 最后一条记录的持续时间设为0或使用平均值
-        if len(app_usage_data) > 1:
-            avg_duration = sum(item["duration"] for item in app_usage_data[:-1]) / (
-                len(app_usage_data) - 1
+        # 处理最后一条记录
+        last_record = app_usage_data[-1]
+
+        # 查找同一应用的前一条记录
+        same_app_records = [
+            item
+            for item in app_usage_data[:-1]
+            if item["app_name"] == last_record["app_name"]
+        ]
+
+        if same_app_records:
+            # 计算同一应用记录的平均持续时间
+            avg_duration = sum(item["duration"] for item in same_app_records) / len(
+                same_app_records
             )
-            app_usage_data[-1]["duration"] = min(
-                avg_duration, 5
-            )  # 使用平均值，但不超过5秒
+            last_record["duration"] = min(avg_duration, 5)  # 使用平均值，但不超过5秒
+        else:
+            # 如果没有同一应用的前序记录，设置默认持续时间
+            last_record["duration"] = 5  # 默认5秒
 
         return app_usage_data
 
     async def _generate_hourly_usage_records(
         self,
         client_id: str,
-        start_time: datetime,
-        end_time: datetime,
         app_usage_data: List[Dict],
     ) -> List[Dict]:
         """
@@ -139,8 +163,6 @@ class UsageAnalysisService:
 
         Args:
             client_id: 客户端ID
-            start_time: 开始时间 (UTC，仅用于日志)
-            end_time: 结束时间 (UTC，仅用于日志)
             app_usage_data: 应用使用数据列表，其中timestamp字段是北京时间
 
         Returns:
@@ -209,16 +231,6 @@ class UsageAnalysisService:
         hourly_records = []
 
         for hour_key, hourly_data in hourly_app_data.items():
-            # 计算平均会话时间
-            total_session_duration = sum(
-                session["duration"] for session in hourly_data["sessions"]
-            )
-            avg_session_time = (
-                total_session_duration / hourly_data["session_count"]
-                if hourly_data["session_count"] > 0
-                else 0
-            )
-
             # 匹配应用类别 - 这里已经返回类别ID
             app_category_id = await self._match_app_category(hourly_data["app_name"])
 
@@ -370,127 +382,6 @@ class UsageAnalysisService:
         except Exception as e:
             logger.error(f"Error marking report {report_id} as processed: {e}")
 
-    async def process_unprocessed_reports(self, hours_back: int = 24):
-        """
-        处理未处理的数据报告
-
-        Args:
-            hours_back: 处理多少小时前的报告
-        """
-        try:
-            # 获取过去指定小时的未处理报告
-            end_time = datetime.utcnow()
-            start_time = end_time - timedelta(hours=hours_back)
-
-            # 查询未处理的报告
-            unprocessed_reports = await self._get_unprocessed_reports(
-                start_time, end_time
-            )
-
-            logger.info(f"Found {len(unprocessed_reports)} unprocessed reports")
-
-            # 处理每个报告
-            for report in unprocessed_reports:
-                try:
-                    # 从ES中获取完整报告
-                    full_report = await self._get_full_report(report["report_id"])
-
-                    if full_report:
-                        # 处理报告
-                        await self.process_report_for_app_usage(
-                            full_report, report["report_id"]
-                        )
-
-                except Exception as e:
-                    logger.error(f"Error processing report {report['report_id']}: {e}")
-
-        except Exception as e:
-            logger.error(f"Error processing unprocessed reports: {e}")
-
-    async def _get_unprocessed_reports(
-        self, start_time: datetime, end_time: datetime
-    ) -> List[Dict[str, Any]]:
-        """
-        获取未处理的报告
-
-        Args:
-            start_time: 开始时间
-            end_time: 结束时间
-
-        Returns:
-            List[Dict[str, Any]]: 未处理的报告列表
-        """
-        # 构建查询
-        query = {
-            "bool": {
-                "must": [
-                    {
-                        "range": {
-                            "timestamp": {
-                                "gte": start_time.isoformat(),
-                                "lte": end_time.isoformat(),
-                            }
-                        }
-                    }
-                ],
-                "must_not": [{"exists": {"field": "app_usage_processed"}}],
-            }
-        }
-
-        # 执行查询
-        indices = f"{settings.ES_INDEX_PREFIX}-data-*"
-        result = await self.es_client.search(
-            index=indices, query=query, _source=["report_id", "timestamp"], size=100
-        )
-
-        # 提取报告ID
-        reports = []
-        for hit in result["hits"]["hits"]:
-            reports.append(
-                {
-                    "report_id": hit["_source"]["report_id"],
-                    "timestamp": hit["_source"]["timestamp"],
-                }
-            )
-
-        return reports
-
-    async def _get_full_report(self, report_id: str) -> Optional[DataReport]:
-        """
-        获取完整报告
-
-        Args:
-            report_id: 报告ID
-
-        Returns:
-            Optional[DataReport]: 完整报告对象
-        """
-        try:
-            # 构建查询
-            query = {"bool": {"must": [{"term": {"report_id": report_id}}]}}
-
-            # 执行查询
-            indices = f"{settings.ES_INDEX_PREFIX}-data-*"
-            result = await self.es_client.search(index=indices, query=query, size=1)
-
-            # 检查是否找到报告
-            if result["hits"]["total"]["value"] > 0:
-                # 获取报告数据
-                report_data = result["hits"]["hits"][0]["_source"]
-
-                # 转换为DataReport对象
-                from ..models.data import DataReport
-
-                report = DataReport.model_validate(report_data)
-
-                return report
-
-            return None
-
-        except Exception as e:
-            logger.error(f"Error getting full report {report_id}: {e}")
-            return None
-
     async def recalculate_hourly_statistics(
         self, hours_back: int = 24, client_id: str = None
     ):
@@ -588,7 +479,7 @@ class UsageAnalysisService:
 
                 # 生成小时级别的应用使用统计
                 hourly_usage_records = await self._generate_hourly_usage_records(
-                    cid, start_time_utc, end_time_utc, app_usage_data
+                    cid, app_usage_data
                 )
 
                 # 清除该客户端在时间范围内的现有记录
