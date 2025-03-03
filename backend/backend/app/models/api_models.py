@@ -54,8 +54,6 @@ class AppUsageStats(BaseModel):
     app_name: str
     total_time_seconds: float
     percentage: float
-    session_count: int
-    avg_session_time: float
     category: Optional[str] = None
     productivity_type: Optional[str] = None
 

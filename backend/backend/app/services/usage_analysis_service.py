@@ -180,7 +180,6 @@ class UsageAnalysisService:
                 
             timestamp = item["timestamp"]  # 这里的timestamp是北京时间
             app_name = item["app_name"]
-            window_name = item["window_name"]
             duration = item["duration"]
             is_active = item["is_active"]
 
@@ -194,61 +193,19 @@ class UsageAnalysisService:
             if hour_key not in hourly_app_data:
                 hourly_app_data[hour_key] = {
                     "app_name": app_name,
-                    "window_name": window_name,  # 初始窗口名
-                    "window_names": {window_name: duration},  # 记录所有窗口名及其持续时间
                     "timestamp": hour_timestamp,  # 这是北京时间的小时时间戳
                     "hour_of_day": timestamp.hour,
                     "day_of_week": timestamp.weekday(),
                     "is_working_hour": self._is_working_hour(timestamp),
                     "total_time_seconds": 0,
-                    "active_time_seconds": 0,
-                    "session_count": 0,
                     "last_timestamp": None,
-                    "sessions": [],
                 }
 
             # 更新统计数据
             hourly_data = hourly_app_data[hour_key]
             hourly_data["total_time_seconds"] += duration
 
-            if is_active:
-                hourly_data["active_time_seconds"] += duration
-                
-            # 更新窗口名称统计
-            if window_name in hourly_data["window_names"]:
-                hourly_data["window_names"][window_name] += duration
-            else:
-                hourly_data["window_names"][window_name] = duration
-
-            # 会话计算 - 使用120秒作为会话间隔阈值，更合理地识别会话
-            if (
-                hourly_data["last_timestamp"] is None
-                or (timestamp - hourly_data["last_timestamp"]).total_seconds() > 120
-            ):  # 如果间隔超过120秒，认为是新会话
-                hourly_data["session_count"] += 1
-                hourly_data["sessions"].append(
-                    {"start": timestamp, "end": timestamp, "duration": 0}
-                )
-            elif len(hourly_data["sessions"]) > 0:
-                # 更新最后一个会话的结束时间和持续时间
-                last_session = hourly_data["sessions"][-1]
-                last_session["end"] = timestamp
-                last_session["duration"] = (
-                    last_session["end"] - last_session["start"]
-                ).total_seconds()
-
             hourly_data["last_timestamp"] = timestamp
-
-        # 选择使用时间最长的窗口名称
-        for hour_key, hourly_data in hourly_app_data.items():
-            if hourly_data["window_names"]:
-                # 找出使用时间最长的窗口名称
-                max_window_name = max(
-                    hourly_data["window_names"].items(), key=lambda x: x[1]
-                )[0]
-                hourly_data["window_name"] = max_window_name
-            # 清理临时数据
-            del hourly_data["window_names"]
 
         # 转换为最终的记录格式
         hourly_records = []
@@ -264,17 +221,12 @@ class UsageAnalysisService:
             # 创建记录 - 注意timestamp是北京时间
             record = {
                 "app_name": hourly_data["app_name"],
-                "window_name": hourly_data["window_name"],  # 添加窗口名称
                 "category_id": app_category_id,
                 "usage_date": hourly_data["timestamp"].date(),  # 使用北京时间的日期
                 "hour": hourly_data["hour_of_day"],  # 使用北京时间的小时
                 "duration_minutes": round(
                     hourly_data["total_time_seconds"] / 60, 2
                 ),  # 转换为分钟
-                "active_minutes": round(
-                    hourly_data["active_time_seconds"] / 60, 2
-                ),  # 活跃时间（分钟）
-                "session_count": hourly_data["session_count"],  # 会话数
                 "client_id": client_id,
             }
 
@@ -462,7 +414,6 @@ class UsageAnalysisService:
                         {
                             "timestamp": timestamp + timedelta(hours=8),  # 这里的timestamp是北京时间
                             "app_name": item["app"],
-                            "window_name": item.get("window", ""),
                             "duration": 0,  # 初始化持续时间为0
                             "is_active": True,  # 假设所有记录的UI都是活跃的
                         }

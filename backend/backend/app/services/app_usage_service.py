@@ -203,8 +203,6 @@ class AppUsageService:
         if existing:
             # 更新现有记录 - 累加而非覆盖
             existing.total_time_seconds += total_time_seconds
-            # 更新会话计数 - 假设每次调用代表一个新会话
-            existing.session_count += 1
             # 更新最后修改时间
             existing.updated_at = datetime.utcnow()
             await self.db.commit()
@@ -221,7 +219,6 @@ class AppUsageService:
             day_of_week=day_of_week,
             is_working_hour=is_working_hour,
             total_time_seconds=total_time_seconds,
-            session_count=1,  # 默认为1个会话
         )
 
         self.db.add(new_usage)
@@ -506,8 +503,7 @@ class AppUsageService:
 
             # 合并窗口数据
             total_time = 0
-            active_time = 0
-            session_count = 0
+            switch_count = 0
 
             for window, window_items in window_groups.items():
                 # 简单计算：假设每条记录代表一段时间的使用
@@ -515,11 +511,8 @@ class AppUsageService:
                 window_time = len(window_items) * 60  # 假设每条记录代表60秒
                 total_time += window_time
 
-                # 估算活跃时间（这里简化处理）
-                active_time += window_time * 0.8
-
-                # 估算会话数（这里简化处理）
-                session_count += 1
+            # 计算切换次数
+            switch_count = len(items) - 1 if len(items) > 1 else 0
 
             # 创建小时应用使用记录
             hour_usage = {
@@ -529,14 +522,8 @@ class AppUsageService:
                 "day_of_week": hour_start.weekday(),
                 "is_working_hour": 9 <= hour_start.hour <= 18,  # 简单判断工作时间
                 "app_name": app_name,
-                "window_name": ", ".join(window_groups.keys())[:255],  # 限制长度
                 "total_time_seconds": total_time,
-                "active_time_seconds": active_time,
-                "session_count": session_count,
-                "avg_session_time": (
-                    total_time / session_count if session_count > 0 else 0
-                ),
-                "switch_count": len(items) - 1 if len(items) > 1 else 0,
+                "switch_count": switch_count,
             }
 
             hourly_app_usage.append(hour_usage)
