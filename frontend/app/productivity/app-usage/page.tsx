@@ -9,7 +9,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AppCategory, AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, HourlyUsageSummary, ProductivitySummary, ProductivityType } from '@/lib/app-usage-api'
+import { AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, ProductivitySummary, ProductivityType } from '@/lib/app-usage-api'
 import { formatTimeSpent } from "@/lib/utils"
 import { addDays, format, subDays } from "date-fns"
 import { BarChart2, ChevronLeft, ChevronRight, Clock, PieChart, Search } from "lucide-react"
@@ -30,10 +30,8 @@ export default function AppUsagePage() {
   const [isLoading, setIsLoading] = useState(false)
 
   // 数据状态
-  const [appCategories, setAppCategories] = useState<AppCategory[]>([])
   const [productivitySummary, setProductivitySummary] = useState<ProductivitySummary | null>(null)
   const [dailyUsage, setDailyUsage] = useState<DailyAppUsage[]>([])
-  const [hourlyData, setHourlyData] = useState<HourlyUsageSummary[]>([])
   const [hourlyAppData, setHourlyAppData] = useState<HourlyAppUsageSummary[]>([])
   const [weeklyData, setWeeklyData] = useState<any[]>([])
 
@@ -106,50 +104,6 @@ export default function AppUsagePage() {
       ]
       setDailyUsage(mockDailyData)
 
-      // 使用模拟数据替代小时数据API调用
-      const mockHourlyData: HourlyUsageSummary[] = []
-
-      // 生成9点到18点的小时数据
-      for (let hour = 9; hour <= 18; hour++) {
-        const hourStr = `${hour.toString().padStart(2, '0')}:00`
-
-        // 根据时间段调整生产力分布
-        let productive = 0
-        let neutral = 0
-        let distracting = 0
-
-        if (hour >= 9 && hour < 12) {
-          // 上午时段：高生产力
-          productive = Math.floor(Math.random() * 15) + 25
-          neutral = Math.floor(Math.random() * 10) + 5
-          distracting = Math.floor(Math.random() * 5) + 1
-        } else if (hour >= 12 && hour < 14) {
-          // 午餐时段：低生产力
-          productive = Math.floor(Math.random() * 10) + 5
-          neutral = Math.floor(Math.random() * 15) + 10
-          distracting = Math.floor(Math.random() * 15) + 10
-        } else if (hour >= 14 && hour < 17) {
-          // 下午时段：中等生产力
-          productive = Math.floor(Math.random() * 15) + 15
-          neutral = Math.floor(Math.random() * 10) + 10
-          distracting = Math.floor(Math.random() * 10) + 5
-        } else {
-          // 傍晚时段：低生产力
-          productive = Math.floor(Math.random() * 10) + 10
-          neutral = Math.floor(Math.random() * 15) + 5
-          distracting = Math.floor(Math.random() * 10) + 10
-        }
-
-        mockHourlyData.push({
-          hour: hourStr,
-          productive,
-          neutral,
-          distracting
-        })
-      }
-
-      setHourlyData(mockHourlyData)
-
       // 使用API函数获取按应用分组的小时数据
       try {
         console.log('正在获取按应用分组的小时数据，日期:', startDateStr)
@@ -188,42 +142,6 @@ export default function AppUsagePage() {
 
         setHourlyAppData(mockAppData)
       }
-
-      // 使用模拟数据替代应用分类API调用
-      const mockCategories: AppCategory[] = [
-        {
-          id: 1,
-          name: '开发工具',
-          productivity_type: ProductivityType.PRODUCTIVE,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 2,
-          name: '浏览器',
-          productivity_type: ProductivityType.NEUTRAL,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 3,
-          name: '通讯工具',
-          productivity_type: ProductivityType.NEUTRAL,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 4,
-          name: '会议工具',
-          productivity_type: ProductivityType.DISTRACTING,
-          created_at: new Date().toISOString()
-        },
-        {
-          id: 5,
-          name: '社交媒体',
-          productivity_type: ProductivityType.DISTRACTING,
-          created_at: new Date().toISOString()
-        }
-      ]
-      setAppCategories(mockCategories)
-
       // 获取周数据（过去7天）
       await fetchWeeklyData()
     } catch (error) {
