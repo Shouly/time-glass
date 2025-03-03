@@ -498,7 +498,7 @@ export default function AppUsagePage() {
           </Card>
         </div>
 
-        {/* 每小时使用图表 - 移到上方 */}
+        {/* 每小时使用图表*/}
         <Card className="border shadow-sm bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-950">
           <CardHeader className="border-b">
             <div className="flex justify-between items-center">
