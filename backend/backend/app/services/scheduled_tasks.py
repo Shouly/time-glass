@@ -49,9 +49,6 @@ async def recalculate_hourly_app_usage_statistics(hours_back: int = 24):
 async def schedule_tasks():
     """
     调度定时任务
-
-    注意：系统处理的是北京时间（UTC+8）的数据。ES中的时间戳是北京时间，
-    而我们的查询使用UTC时间，但会在查询时将其转换为北京时间进行比较。
     """
     while True:
         try:
