@@ -142,33 +142,6 @@ export async function recordAppUsage(usage: HourlyAppUsageCreate): Promise<Hourl
   return response.data;
 }
 
-export async function getAppUsage(
-  startDate: string,
-  endDate: string,
-  appName?: string,
-  categoryId?: number,
-  page: number = 1,
-  pageSize: number = 100
-): Promise<PaginatedResponse<HourlyAppUsage>> {
-  const params: Record<string, any> = {
-    start_date: startDate,
-    end_date: endDate,
-    skip: (page - 1) * pageSize,
-    limit: pageSize,
-  };
-
-  if (appName) {
-    params.app_name = appName;
-  }
-
-  if (categoryId) {
-    params.category_id = categoryId;
-  }
-
-  const response = await api.get('/app-usage/usage', { params });
-  return response.data;
-}
-
 // 生产力统计API函数
 export async function getProductivitySummary(
   startDate: string,
@@ -232,7 +205,6 @@ export const AppUsageApi = {
   updateAppCategory,
   deleteAppCategory,
   recordAppUsage,
-  getAppUsage,
   getProductivitySummary,
   getDailyAppUsage,
   getHourlyAppUsage,

@@ -40,13 +40,13 @@ export default function AppUsagePage() {
   // 获取数据的函数
   const fetchData = async () => {
     if (!dateRange?.from || !dateRange?.to) return
-    
+
     setIsLoading(true)
     try {
       // 获取生产力摘要
       const startDateStr = format(dateRange.from, 'yyyy-MM-dd')
       const endDateStr = format(dateRange.to, 'yyyy-MM-dd')
-      
+
       // 使用模拟数据替代API调用
       const mockSummaryData: ProductivitySummary = {
         start_date: startDateStr,
@@ -60,7 +60,7 @@ export default function AppUsagePage() {
         distracting_percentage: 5.89
       }
       setProductivitySummary(mockSummaryData)
-      
+
       // 使用模拟数据替代每日应用使用情况API调用
       const mockDailyData: DailyAppUsage[] = [
         {
@@ -105,19 +105,19 @@ export default function AppUsagePage() {
         }
       ]
       setDailyUsage(mockDailyData)
-      
+
       // 使用模拟数据替代小时数据API调用
       const mockHourlyData: HourlyUsageSummary[] = []
-      
+
       // 生成9点到18点的小时数据
       for (let hour = 9; hour <= 18; hour++) {
         const hourStr = `${hour.toString().padStart(2, '0')}:00`
-        
+
         // 根据时间段调整生产力分布
         let productive = 0
         let neutral = 0
         let distracting = 0
-        
+
         if (hour >= 9 && hour < 12) {
           // 上午时段：高生产力
           productive = Math.floor(Math.random() * 15) + 25
@@ -139,7 +139,7 @@ export default function AppUsagePage() {
           neutral = Math.floor(Math.random() * 15) + 5
           distracting = Math.floor(Math.random() * 10) + 10
         }
-        
+
         mockHourlyData.push({
           hour: hourStr,
           productive,
@@ -147,9 +147,9 @@ export default function AppUsagePage() {
           distracting
         })
       }
-      
+
       setHourlyData(mockHourlyData)
-      
+
       // 使用API函数获取按应用分组的小时数据
       try {
         console.log('正在获取按应用分组的小时数据，日期:', startDateStr)
@@ -158,22 +158,22 @@ export default function AppUsagePage() {
         setHourlyAppData(hourlyAppData)
       } catch (error) {
         console.error('获取按应用分组的小时数据失败:', error)
-        
+
         // 生成模拟数据作为备用
         const mockAppData: HourlyAppUsageSummary[] = []
         const apps = ['Chrome', 'VS Code', 'Slack', 'Terminal', 'Notion', 'Zoom']
         const types: ProductivityType[] = [
-          ProductivityType.PRODUCTIVE, 
-          ProductivityType.PRODUCTIVE, 
-          ProductivityType.NEUTRAL, 
-          ProductivityType.PRODUCTIVE, 
-          ProductivityType.NEUTRAL, 
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.NEUTRAL,
+          ProductivityType.PRODUCTIVE,
+          ProductivityType.NEUTRAL,
           ProductivityType.DISTRACTING
         ]
-        
+
         for (let hour = 9; hour <= 18; hour++) {
           const hourStr = `${hour.toString().padStart(2, '0')}:00`
-          
+
           apps.forEach((app, index) => {
             if (Math.random() > 0.3) { // 随机生成一些数据
               mockAppData.push({
@@ -185,7 +185,7 @@ export default function AppUsagePage() {
             }
           })
         }
-        
+
         setHourlyAppData(mockAppData)
       }
 
@@ -236,14 +236,14 @@ export default function AppUsagePage() {
   // 获取周数据
   const fetchWeeklyData = async () => {
     if (!dateRange?.from) return
-    
+
     try {
       const endDate = dateRange.from
       const startDate = subDays(endDate, 6)
-      
+
       // 使用模拟数据替代API调用
       const mockWeeklyData: DailyAppUsage[] = []
-      
+
       // 为过去7天生成模拟数据
       for (let i = 0; i < 7; i++) {
         const currentDate = format(subDays(endDate, i), 'yyyy-MM-dd')
@@ -257,7 +257,7 @@ export default function AppUsagePage() {
           ProductivityType.PRODUCTIVE,
           ProductivityType.DISTRACTING
         ]
-        
+
         // 为每天生成不同的应用使用数据
         apps.forEach((app, index) => {
           // 随机生成使用时间，工作日使用时间更长
@@ -265,7 +265,7 @@ export default function AppUsagePage() {
           const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
           const baseMinutes = isWeekend ? 30 : 60
           const randomFactor = Math.random() * 0.5 + 0.75 // 0.75 到 1.25 之间的随机因子
-          
+
           mockWeeklyData.push({
             date: currentDate,
             app_name: app,
@@ -276,11 +276,11 @@ export default function AppUsagePage() {
           })
         })
       }
-      
+
       // 处理周数据
       const weekDays = ['日', '一', '二', '三', '四', '五', '六']
       const processedData = []
-      
+
       // 按日期分组并计算总时间
       const groupedByDate = mockWeeklyData.reduce((acc: any, item: DailyAppUsage) => {
         const date = item.date
@@ -290,19 +290,19 @@ export default function AppUsagePage() {
         acc[date] += item.total_minutes
         return acc
       }, {})
-      
+
       // 转换为图表数据格式
       for (let i = 0; i < 7; i++) {
         const date = format(subDays(endDate, 6 - i), 'yyyy-MM-dd')
         const dayOfWeek = new Date(date).getDay()
         const hours = (groupedByDate[date] || 0) / 60
-        
+
         processedData.push({
           day: weekDays[dayOfWeek],
           hours: parseFloat(hours.toFixed(1))
         })
       }
-      
+
       setWeeklyData(processedData)
     } catch (error) {
       console.error('获取周数据失败:', error)
