@@ -31,17 +31,6 @@ export interface AppCategoryCreate {
   productivity_type: ProductivityType;
 }
 
-// 应用使用时间接口
-export interface HourlyAppUsage {
-  id: number;
-  app_name: string;
-  category_id: number;
-  usage_date: string;
-  hour: number;
-  duration_minutes: number;
-  created_at: string;
-}
-
 export interface HourlyAppUsageCreate {
   app_name: string;
   category_id: number;
@@ -79,14 +68,6 @@ export interface DailyAppUsage {
   category_name: string;
   productivity_type: ProductivityType;
   total_minutes: number;
-}
-
-// 小时应用使用统计接口
-export interface HourlyUsageSummary {
-  hour: string;
-  productive: number;
-  neutral: number;
-  distracting: number;
 }
 
 // 按应用分组的小时使用统计接口
@@ -133,12 +114,6 @@ export async function updateAppCategory(id: number, category: AppCategoryCreate)
 
 export async function deleteAppCategory(id: number): Promise<{ status: string; message: string }> {
   const response = await api.delete(`/app-usage/categories/${id}`);
-  return response.data;
-}
-
-// 应用使用时间API函数
-export async function recordAppUsage(usage: HourlyAppUsageCreate): Promise<HourlyAppUsage> {
-  const response = await api.post('/app-usage/usage', usage);
   return response.data;
 }
 
@@ -204,7 +179,6 @@ export const AppUsageApi = {
   getAppCategory,
   updateAppCategory,
   deleteAppCategory,
-  recordAppUsage,
   getProductivitySummary,
   getDailyAppUsage,
   getHourlyAppUsage,
