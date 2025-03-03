@@ -112,36 +112,8 @@ export default function AppUsagePage() {
         setHourlyAppData(hourlyAppData)
       } catch (error) {
         console.error('获取按应用分组的小时数据失败:', error)
-
-        // 生成模拟数据作为备用
-        const mockAppData: HourlyAppUsageSummary[] = []
-        const apps = ['Chrome', 'VS Code', 'Slack', 'Terminal', 'Notion', 'Zoom']
-        const types: ProductivityType[] = [
-          ProductivityType.PRODUCTIVE,
-          ProductivityType.PRODUCTIVE,
-          ProductivityType.NEUTRAL,
-          ProductivityType.PRODUCTIVE,
-          ProductivityType.NEUTRAL,
-          ProductivityType.DISTRACTING
-        ]
-
-        for (let hour = 9; hour <= 18; hour++) {
-          const hourStr = `${hour.toString().padStart(2, '0')}:00`
-
-          apps.forEach((app, index) => {
-            if (Math.random() > 0.3) { // 随机生成一些数据
-              mockAppData.push({
-                hour: hourStr,
-                app_name: app,
-                duration_minutes: Math.floor(Math.random() * 30) + 5,
-                productivity_type: types[index % types.length]
-              })
-            }
-          })
-        }
-
-        setHourlyAppData(mockAppData)
       }
+
       // 获取周数据（过去7天）
       await fetchWeeklyData()
     } catch (error) {
