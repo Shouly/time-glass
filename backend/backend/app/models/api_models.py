@@ -1,7 +1,9 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional, Dict, Any, Generic, TypeVar
-from datetime import datetime, date
+from datetime import date, datetime
 from enum import Enum
+from typing import Any, Dict, Generic, List, Optional, TypeVar
+
+from pydantic import BaseModel, Field
+
 
 # 生产力类型枚举
 class ProductivityTypeEnum(str, Enum):
@@ -9,10 +11,12 @@ class ProductivityTypeEnum(str, Enum):
     NEUTRAL = "NEUTRAL"
     DISTRACTING = "DISTRACTING"
 
+
 # 应用类别模型
 class AppCategoryCreate(BaseModel):
     name: str
     productivity_type: ProductivityTypeEnum
+
 
 class AppCategoryResponse(BaseModel):
     id: int
@@ -20,30 +24,17 @@ class AppCategoryResponse(BaseModel):
     productivity_type: ProductivityTypeEnum
     created_at: datetime
 
-# 应用使用时间模型
-class HourlyAppUsageCreate(BaseModel):
-    app_name: str
-    category_id: int
-    usage_date: date
-    hour: int
-    duration_minutes: float
-
-class HourlyAppUsageResponse(BaseModel):
-    id: int
-    app_name: str
-    category_id: int
-    usage_date: date
-    hour: int
-    duration_minutes: float
-    created_at: datetime
 
 # 通用分页响应模型
-T = TypeVar('T')
+T = TypeVar("T")
+
+
 class PaginatedResponse(BaseModel, Generic[T]):
     items: List[T]
     total: int
     page: int
     size: int
+
 
 # 生产力统计摘要模型
 class ProductivitySummary(BaseModel):
@@ -57,6 +48,7 @@ class ProductivitySummary(BaseModel):
     neutral_percentage: float
     distracting_percentage: float
 
+
 # 应用使用统计响应模型
 class AppUsageStats(BaseModel):
     app_name: str
@@ -67,13 +59,15 @@ class AppUsageStats(BaseModel):
     category: Optional[str] = None
     productivity_type: Optional[str] = None
 
+
 class HourlyUsageStats(BaseModel):
     hour: int
     total_time_seconds: float
     productive_time_seconds: float
     distracting_time_seconds: float
     neutral_time_seconds: float
-    
+
+
 class DailyUsageStats(BaseModel):
     date: str
     total_time_seconds: float
@@ -81,16 +75,10 @@ class DailyUsageStats(BaseModel):
     distracting_time_seconds: float
     neutral_time_seconds: float
 
-# 每小时使用统计响应模型
-class HourlyUsageSummary(BaseModel):
-    hour: str
-    productive: float
-    neutral: float
-    distracting: float
 
 # 按应用分组的每小时使用统计响应模型
 class HourlyAppUsageSummary(BaseModel):
     hour: str
     app_name: str
     duration_minutes: float
-    productivity_type: ProductivityTypeEnum 
+    productivity_type: ProductivityTypeEnum
