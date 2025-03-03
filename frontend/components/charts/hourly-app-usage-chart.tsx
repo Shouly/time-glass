@@ -48,13 +48,13 @@ export function HourlyAppUsageChart({ data, height = 300, maxApps = 5 }: HourlyA
       data.forEach(item => {
         if (!appUsageMap.has(item.app_name)) {
           appUsageMap.set(item.app_name, { 
-            total: item.duration_minutes,
+            total: Math.round(item.duration_minutes),
             type: item.productivity_type
           })
         } else {
           const current = appUsageMap.get(item.app_name)!
           appUsageMap.set(item.app_name, {
-            total: current.total + item.duration_minutes,
+            total: current.total + Math.round(item.duration_minutes),
             type: current.type
           })
         }
@@ -71,40 +71,32 @@ export function HourlyAppUsageChart({ data, height = 300, maxApps = 5 }: HourlyA
         }))
       
       // 为每个应用创建系列数据
-      const series = topApps.map(app => {
+      const series = topApps.map((app, index) => {
         // 为每个小时创建数据点
         const hourData = hours.map(hour => {
           const hourItem = data.find(item => item.hour === hour && item.app_name === app.name)
-          return hourItem ? hourItem.duration_minutes : 0
+          return hourItem ? Math.round(hourItem.duration_minutes) : 0
         })
         
-        // 根据应用的生产力类型设置颜色
-        let color
-        switch (app.type) {
-          case 'PRODUCTIVE':
-            color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#22c55e' },
-              { offset: 1, color: '#16a34a' }
-            ])
-            break
-          case 'NEUTRAL':
-            color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#3b82f6' },
-              { offset: 1, color: '#2563eb' }
-            ])
-            break
-          case 'DISTRACTING':
-            color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#ef4444' },
-              { offset: 1, color: '#dc2626' }
-            ])
-            break
-          default:
-            color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: '#94a3b8' },
-              { offset: 1, color: '#64748b' }
-            ])
-        }
+        // 为每个应用分配不同的颜色
+        const colors = [
+          ['#10b981', '#059669'], // 绿色
+          ['#3b82f6', '#2563eb'], // 蓝色
+          ['#f97316', '#ea580c'], // 橙色
+          ['#8b5cf6', '#7c3aed'], // 紫色
+          ['#ec4899', '#db2777'], // 粉色
+          ['#14b8a6', '#0d9488'], // 青色
+          ['#f43f5e', '#e11d48'], // 红色
+          ['#facc15', '#eab308'], // 黄色
+          ['#6366f1', '#4f46e5'], // 靛蓝色
+          ['#84cc16', '#65a30d']  // 酸橙色
+        ]
+        
+        const colorIndex = index % colors.length
+        const color = new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: colors[colorIndex][0] },
+          { offset: 1, color: colors[colorIndex][1] }
+        ])
         
         return {
           name: app.name,
@@ -135,7 +127,7 @@ export function HourlyAppUsageChart({ data, height = 300, maxApps = 5 }: HourlyA
             sortedParams.forEach((param: any) => {
               const color = param.color
               const name = param.seriesName
-              const value = param.value
+              const value = Math.round(param.value) // 将分钟数据取整
               
               if (value > 0) {
                 result += `<div style="display: flex; align-items: center; margin-top: 3px;">
@@ -199,6 +191,9 @@ export function HourlyAppUsageChart({ data, height = 300, maxApps = 5 }: HourlyA
               type: 'dashed',
               color: '#eee'
             }
+          },
+          axisLabel: {
+            formatter: (value: number) => Math.round(value).toString()
           }
         },
         series

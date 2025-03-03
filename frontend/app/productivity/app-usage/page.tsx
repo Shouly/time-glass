@@ -510,16 +510,8 @@ export default function AppUsagePage() {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 rounded-full bg-green-500"></div>
-                  <span className="text-xs text-muted-foreground">生产型应用</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                  <span className="text-xs text-muted-foreground">中性应用</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span className="text-xs text-muted-foreground">干扰型应用</span>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground">显示前6个使用最多的应用</span>
                 </div>
               </div>
             </div>
