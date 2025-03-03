@@ -269,19 +269,6 @@ async def get_daily_app_usage(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"获取每日应用使用时间统计失败: {str(e)}")
 
-@router.get("/hourly-usage", response_model=List[HourlyUsageSummary])
-async def get_hourly_usage(
-    date: date = Query(..., description="日期"),
-    db: AsyncSession = Depends(get_db)
-):
-    """获取每小时使用统计"""
-    service = AppUsageService(db)
-    try:
-        hourly_usage = await service.get_hourly_usage_summary(date=date)
-        return hourly_usage
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"获取每小时使用统计失败: {str(e)}")
-
 @router.get("/hourly-app-usage", response_model=List[HourlyAppUsageSummary])
 async def get_hourly_app_usage(
     date: date = Query(..., description="日期"),
