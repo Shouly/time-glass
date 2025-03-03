@@ -75,40 +75,9 @@ class DataService:
             # 提取UI监控数据
             await self._extract_ui_monitoring(report, report_id)
             
-            # 新增：处理应用使用统计
-            await self._process_app_usage_statistics(report, report_id)
-            
         except Exception as e:
             logger.error(f"Error extracting specialized data: {e}")
             # 这里的错误不应该影响主流程，所以我们只记录错误
-    
-    async def _process_app_usage_statistics(self, report: DataReport, report_id: str):
-        """
-        处理应用使用统计
-        
-        Args:
-            report: 数据报告对象
-            report_id: 报告ID
-        """
-        try:
-            # 获取数据库会话
-            from ..db.mysql import AsyncSessionLocal
-            
-            # 使用异步上下文管理器
-            async with AsyncSessionLocal() as db:
-                # 创建使用分析服务
-                from ..services.usage_analysis_service import UsageAnalysisService
-                usage_analysis_service = UsageAnalysisService(db, self.es_client)
-                
-                # 处理报告中的应用使用数据
-                await usage_analysis_service.process_report_for_app_usage(report, report_id)
-                
-                logger.info(f"Processed app usage statistics for report {report_id}")
-                
-        except Exception as e:
-            logger.error(f"Error processing app usage statistics: {e}")
-            # 这里我们只记录错误，不抛出异常，以免影响其他数据处理
-            # 可以通过定时任务重新处理未处理的报告
     
     async def _extract_ocr_text(self, report: DataReport, report_id: str):
         """提取OCR文本到专用索引"""

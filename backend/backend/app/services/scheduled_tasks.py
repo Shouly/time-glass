@@ -56,7 +56,7 @@ async def schedule_tasks():
 
             # 重新计算小时应用使用统计
             # 这个任务会从ES中获取原始数据并重新计算统计信息
-            await recalculate_hourly_app_usage_statistics(hours_back=4)
+            await recalculate_hourly_app_usage_statistics(hours_back=1)
 
             logger.info("定时任务执行完成")
 
@@ -64,5 +64,5 @@ async def schedule_tasks():
             logger.error(f"执行定时任务时出错: {e}")
             # 这里可以添加错误通知逻辑
 
-        # 等待一段时间后再次执行（例如每小时执行一次）
-        await asyncio.sleep(3600)  # 3600秒 = 1小时
+        # 等待一段时间后再次执行
+        await asyncio.sleep(60)  # 60秒 = 1分钟

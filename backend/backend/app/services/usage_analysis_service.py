@@ -20,67 +20,6 @@ class UsageAnalysisService:
         self.es_client = es_client
         self.app_usage_service = AppUsageService(db, es_client)
 
-    async def process_report_for_app_usage(self, report: DataReport, report_id: str):
-        """
-        处理数据报告，提取应用使用信息并生成统计数据
-
-        Args:
-            report: 数据报告对象
-            report_id: 报告ID
-        """
-        try:
-            # 1. 提取报告client_id
-            client_id = report.clientId
-
-            # 2. 从报告中提取OCR文本数据
-            app_usage_data = self._extract_app_usage_from_ocr_text(report)
-
-            # 3. 生成小时级别的应用使用统计
-            hourly_usage_records = await self._generate_hourly_usage_records(
-                client_id, app_usage_data
-            )
-
-            # 4. 批量保存应用使用统计
-            if hourly_usage_records:
-                await self.app_usage_service.batch_record_hourly_app_usage(
-                    hourly_usage_records
-                )
-            logger.info(f"Successfully processed app usage data for report {report_id}")
-
-        except Exception as e:
-            logger.error(f"Error processing app usage data for report {report_id}: {e}")
-            raise
-
-    def _extract_app_usage_from_ocr_text(self, report: DataReport) -> List[Dict]:
-        """
-        从OCR文本数据中提取应用使用信息
-
-        Args:
-            report: 数据报告对象
-
-        Returns:
-            List[Dict]: 应用使用数据列表
-        """
-        app_usage_data = []
-
-        # 从OCR文本数据中提取
-        for frame in report.data.frames:
-            if hasattr(frame, "ocr_text") and frame.ocr_text:
-                app_usage_data.append(
-                    {
-                        "timestamp": frame.timestamp + timedelta(hours=8),
-                        "app_name": frame.ocr_text.app_name,
-                        "window_name": frame.ocr_text.window_name,
-                        "duration": 0,  # 初始化持续时间为0
-                        "is_active": frame.ocr_text.focused,  # 使用OCR文本中的focused字段
-                    }
-                )
-
-        # 计算每个应用的使用时间
-        app_usage_data = self._calculate_app_usage_duration(app_usage_data)
-
-        return app_usage_data
-
     def _calculate_app_usage_duration(self, app_usage_data: List[Dict]) -> List[Dict]:
         """
         计算应用使用时间，按时间顺序处理，将应用切换间隔时间全部分配给前一个应用
@@ -102,7 +41,6 @@ class UsageAnalysisService:
             return app_usage_data
 
         # 定义参数
-        default_duration = 5   # 默认持续时间（秒）
         lock_screen_app = "loginwindow"  # 锁屏状态的应用名称
 
         # 遍历记录计算持续时间
@@ -126,28 +64,9 @@ class UsageAnalysisService:
         # 处理最后一条记录
         last_record = app_usage_data[-1]
         
-        # 如果最后一条记录是锁屏状态，设置持续时间为0
-        if last_record["app_name"] == lock_screen_app:
-            last_record["duration"] = 0
-            return app_usage_data
-        
-        # 查找同一应用的前一条记录
-        same_app_records = [
-            item
-            for item in app_usage_data[:-1]
-            if item["app_name"] == last_record["app_name"] and item["app_name"] != lock_screen_app
-        ]
+        # 如果最后一条记录，设置持续时间为0
+        last_record["duration"] = 0
 
-        if same_app_records:
-            # 计算同一应用记录的平均持续时间
-            avg_duration = sum(item["duration"] for item in same_app_records) / len(
-                same_app_records
-            )
-            last_record["duration"] = min(avg_duration, default_duration * 2)
-        else:
-            # 如果没有同一应用的前序记录，设置默认持续时间
-            last_record["duration"] = default_duration
-                
         return app_usage_data
 
     async def _generate_hourly_usage_records(
@@ -343,7 +262,9 @@ class UsageAnalysisService:
         try:
             # 计算时间范围 - 使用UTC时间
             end_time_utc = datetime.utcnow()
+            # 计算开始时间并取整到小时的开始（0分0秒）
             start_time_utc = end_time_utc - timedelta(hours=hours_back)
+            start_time_utc = start_time_utc.replace(minute=0, second=0, microsecond=0)
 
             logger.info(
                 f"开始重新计算从 {start_time_utc} UTC 到 {end_time_utc} UTC 的小时应用使用统计"
