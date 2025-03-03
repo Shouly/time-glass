@@ -9,7 +9,7 @@ import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, ProductivitySummary, ProductivityType } from '@/lib/app-usage-api'
+import { AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, ProductivitySummary } from '@/lib/app-usage-api'
 import { formatMinutes, formatTimeSpent } from "@/lib/utils"
 import { addDays, format, subDays } from "date-fns"
 import { ChevronLeft, ChevronRight, Clock, Search } from "lucide-react"
@@ -53,43 +53,6 @@ export default function AppUsagePage() {
         setProductivitySummary(summaryData)
       } catch (error) {
         console.error('获取生产力摘要失败:', error)
-        // 如果API调用失败，使用模拟数据作为备份
-        const mockSummaryData: ProductivitySummary = {
-          // 基本信息
-          start_date: startDateStr,
-          end_date: endDateStr,
-
-          // 时间统计（分钟）
-          total_minutes: 412, // 6小时52分钟
-          productive_minutes: 320, // 5小时20分钟
-          neutral_minutes: 60, // 1小时
-          distracting_minutes: 32, // 32分钟
-
-          // 百分比统计
-          productive_percentage: 78, // 效率指数
-          neutral_percentage: 14.5,
-          distracting_percentage: 7.5,
-
-          // 与前一天比较
-          yesterday_total_minutes: 380, // 前一天的总时间
-          yesterday_productive_minutes: 277, // 前一天的生产时间
-          yesterday_neutral_minutes: 65, // 前一天的中性时间
-          yesterday_distracting_minutes: 38, // 前一天的干扰时间
-          yesterday_productive_percentage: 73, // 前一天的效率指数
-
-          // 趋势信息
-          total_minutes_change_percentage: 8, // 总时间增加8%
-          productive_percentage_change: 5, // 效率指数增加5个百分点
-
-          // 应用统计
-          most_used_app: 'Visual Studio Code',
-          most_used_app_percentage: 42,
-
-          // 异常信息
-          anomaly_count: 0,
-          anomaly_description: '一切正常'
-        }
-        setProductivitySummary(mockSummaryData)
       }
 
       // 使用API获取每日应用使用情况
@@ -100,50 +63,6 @@ export default function AppUsagePage() {
         setDailyUsage(dailyData)
       } catch (error) {
         console.error('获取每日应用使用情况失败:', error)
-        // 如果API调用失败，使用模拟数据作为备份
-        const mockDailyData: DailyAppUsage[] = [
-          {
-            date: startDateStr,
-            app_name: 'Visual Studio Code',
-            category_id: 1,
-            category_name: '开发工具',
-            productivity_type: ProductivityType.PRODUCTIVE,
-            total_minutes: 173 // 占比42%
-          },
-          {
-            date: startDateStr,
-            app_name: 'Chrome',
-            category_id: 2,
-            category_name: '浏览器',
-            productivity_type: ProductivityType.NEUTRAL,
-            total_minutes: 95
-          },
-          {
-            date: startDateStr,
-            app_name: 'Terminal',
-            category_id: 1,
-            category_name: '开发工具',
-            productivity_type: ProductivityType.PRODUCTIVE,
-            total_minutes: 82
-          },
-          {
-            date: startDateStr,
-            app_name: 'Slack',
-            category_id: 3,
-            category_name: '通讯工具',
-            productivity_type: ProductivityType.NEUTRAL,
-            total_minutes: 35
-          },
-          {
-            date: startDateStr,
-            app_name: 'Zoom',
-            category_id: 4,
-            category_name: '会议工具',
-            productivity_type: ProductivityType.DISTRACTING,
-            total_minutes: 27
-          }
-        ]
-        setDailyUsage(mockDailyData)
       }
 
       // 使用API函数获取按应用分组的小时数据
@@ -180,7 +99,7 @@ export default function AppUsagePage() {
         console.log('正在获取周数据，日期范围:', startDateStr, '至', endDateStr)
         const weeklyData = await AppUsageApi.getDailyAppUsage(startDateStr, endDateStr)
         console.log('成功获取周数据:', weeklyData.length, '条记录')
-        
+
         // 处理周数据
         const weekDays = ['日', '一', '二', '三', '四', '五', '六']
         const processedData = []
@@ -210,79 +129,10 @@ export default function AppUsagePage() {
         setWeeklyData(processedData)
       } catch (error) {
         console.error('获取周数据失败:', error)
-        // 如果API调用失败，使用模拟数据作为备份
-        fallbackToMockWeeklyData(endDate)
       }
     } catch (error) {
       console.error('处理周数据失败:', error)
     }
-  }
-
-  // 备用的模拟周数据生成函数
-  const fallbackToMockWeeklyData = (endDate: Date) => {
-    // 使用模拟数据替代API调用
-    const mockWeeklyData: DailyAppUsage[] = []
-
-    // 为过去7天生成模拟数据
-    for (let i = 0; i < 7; i++) {
-      const currentDate = format(subDays(endDate, i), 'yyyy-MM-dd')
-      const apps = ['VS Code', 'Chrome', 'Slack', 'Terminal', 'Zoom']
-      const categories = [1, 2, 3, 1, 4]
-      const categoryNames = ['开发工具', '浏览器', '通讯工具', '开发工具', '会议工具']
-      const types = [
-        ProductivityType.PRODUCTIVE,
-        ProductivityType.NEUTRAL,
-        ProductivityType.NEUTRAL,
-        ProductivityType.PRODUCTIVE,
-        ProductivityType.DISTRACTING
-      ]
-
-      // 为每天生成不同的应用使用数据
-      apps.forEach((app, index) => {
-        // 随机生成使用时间，工作日使用时间更长
-        const dayOfWeek = new Date(currentDate).getDay()
-        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6
-        const baseMinutes = isWeekend ? 30 : 60
-        const randomFactor = Math.random() * 0.5 + 0.75 // 0.75 到 1.25 之间的随机因子
-
-        mockWeeklyData.push({
-          date: currentDate,
-          app_name: app,
-          category_id: categories[index],
-          category_name: categoryNames[index],
-          productivity_type: types[index],
-          total_minutes: Math.round(baseMinutes * randomFactor)
-        })
-      })
-    }
-
-    // 处理周数据
-    const weekDays = ['日', '一', '二', '三', '四', '五', '六']
-    const processedData = []
-
-    // 按日期分组并计算总时间
-    const groupedByDate = mockWeeklyData.reduce((acc: any, item: DailyAppUsage) => {
-      const date = item.date
-      if (!acc[date]) {
-        acc[date] = 0
-      }
-      acc[date] += item.total_minutes
-      return acc
-    }, {})
-
-    // 转换为图表数据格式
-    for (let i = 0; i < 7; i++) {
-      const date = format(subDays(endDate, 6 - i), 'yyyy-MM-dd')
-      const dayOfWeek = new Date(date).getDay()
-      const hours = (groupedByDate[date] || 0) / 60
-
-      processedData.push({
-        day: weekDays[dayOfWeek],
-        hours: parseFloat(hours.toFixed(1))
-      })
-    }
-
-    setWeeklyData(processedData)
   }
 
   // 日期变更处理
