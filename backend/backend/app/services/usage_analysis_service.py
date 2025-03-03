@@ -83,7 +83,8 @@ class UsageAnalysisService:
 
     def _calculate_app_usage_duration(self, app_usage_data: List[Dict]) -> List[Dict]:
         """
-        计算应用使用时间，按时间顺序处理，遇到应用变化时重新计时
+        计算应用使用时间，按时间顺序处理，将应用切换间隔时间全部分配给前一个应用
+        识别loginwindow作为锁屏状态，不计入应用使用时间
 
         Args:
             app_usage_data: 应用使用数据列表
@@ -97,14 +98,12 @@ class UsageAnalysisService:
         # 如果没有记录或只有一条记录，直接返回
         if len(app_usage_data) <= 1:
             if app_usage_data:
-                app_usage_data[0]["duration"] = 5  # 默认5秒
+                app_usage_data[0]["duration"] = 0
             return app_usage_data
 
-        # 定义最大时间间隔（秒）
-        max_interval = 60
-
-        # 定义会话超时时间（秒）
-        session_timeout = 300  # 5分钟
+        # 定义参数
+        default_duration = 5   # 默认持续时间（秒）
+        lock_screen_app = "loginwindow"  # 锁屏状态的应用名称
 
         # 遍历记录计算持续时间
         for i in range(len(app_usage_data) - 1):
@@ -112,30 +111,31 @@ class UsageAnalysisService:
             next_record = app_usage_data[i + 1]
 
             # 计算时间差（秒）
-            time_diff = (
-                next_record["timestamp"] - current["timestamp"]
-            ).total_seconds()
-
-            # 如果应用名称改变或时间间隔过大，当前记录的持续时间设为默认值或较小值
-            if (
-                current["app_name"] != next_record["app_name"]
-                or time_diff > session_timeout
-            ):
-                current["duration"] = min(
-                    5, time_diff
-                )  # 默认5秒或实际时间差（取较小值）
-            else:
-                # 同一应用内的连续记录，使用实际时间差（但限制最大值）
-                current["duration"] = min(time_diff, max_interval)
+            time_diff = (next_record["timestamp"] - current["timestamp"]).total_seconds()
+            
+            # 锁屏状态处理
+            if current["app_name"] == lock_screen_app:
+                # 如果当前是锁屏状态，不计算使用时间
+                current["duration"] = 0
+                continue
+                
+            # 切换到锁屏状态或其他应用的处理
+            # 无论切换到什么应用（包括锁屏），都将时间差全部分配给当前应用
+            current["duration"] = time_diff
 
         # 处理最后一条记录
         last_record = app_usage_data[-1]
-
+        
+        # 如果最后一条记录是锁屏状态，设置持续时间为0
+        if last_record["app_name"] == lock_screen_app:
+            last_record["duration"] = 0
+            return app_usage_data
+        
         # 查找同一应用的前一条记录
         same_app_records = [
             item
             for item in app_usage_data[:-1]
-            if item["app_name"] == last_record["app_name"]
+            if item["app_name"] == last_record["app_name"] and item["app_name"] != lock_screen_app
         ]
 
         if same_app_records:
@@ -143,11 +143,11 @@ class UsageAnalysisService:
             avg_duration = sum(item["duration"] for item in same_app_records) / len(
                 same_app_records
             )
-            last_record["duration"] = min(avg_duration, 5)  # 使用平均值，但不超过5秒
+            last_record["duration"] = min(avg_duration, default_duration * 2)
         else:
             # 如果没有同一应用的前序记录，设置默认持续时间
-            last_record["duration"] = 5  # 默认5秒
-
+            last_record["duration"] = default_duration
+                
         return app_usage_data
 
     async def _generate_hourly_usage_records(
@@ -166,9 +166,18 @@ class UsageAnalysisService:
             List[Dict]: 小时级别的应用使用统计记录
         """
         hourly_app_data = {}
+        lock_screen_app = "loginwindow"  # 锁屏状态的应用名称
 
         # 按应用和小时聚合数据
         for item in app_usage_data:
+            # 跳过锁屏应用
+            if item["app_name"] == lock_screen_app:
+                continue
+                
+            # 跳过持续时间为0的记录
+            if item["duration"] <= 0:
+                continue
+                
             timestamp = item["timestamp"]  # 这里的timestamp是北京时间
             app_name = item["app_name"]
             window_name = item["window_name"]
@@ -185,7 +194,8 @@ class UsageAnalysisService:
             if hour_key not in hourly_app_data:
                 hourly_app_data[hour_key] = {
                     "app_name": app_name,
-                    "window_name": window_name,  # 使用最后一个窗口名
+                    "window_name": window_name,  # 初始窗口名
+                    "window_names": {window_name: duration},  # 记录所有窗口名及其持续时间
                     "timestamp": hour_timestamp,  # 这是北京时间的小时时间戳
                     "hour_of_day": timestamp.hour,
                     "day_of_week": timestamp.weekday(),
@@ -203,12 +213,18 @@ class UsageAnalysisService:
 
             if is_active:
                 hourly_data["active_time_seconds"] += duration
+                
+            # 更新窗口名称统计
+            if window_name in hourly_data["window_names"]:
+                hourly_data["window_names"][window_name] += duration
+            else:
+                hourly_data["window_names"][window_name] = duration
 
-            # 会话计算
+            # 会话计算 - 使用120秒作为会话间隔阈值，更合理地识别会话
             if (
                 hourly_data["last_timestamp"] is None
-                or (timestamp - hourly_data["last_timestamp"]).total_seconds() > 60
-            ):  # 如果间隔超过60秒，认为是新会话
+                or (timestamp - hourly_data["last_timestamp"]).total_seconds() > 120
+            ):  # 如果间隔超过120秒，认为是新会话
                 hourly_data["session_count"] += 1
                 hourly_data["sessions"].append(
                     {"start": timestamp, "end": timestamp, "duration": 0}
@@ -222,24 +238,43 @@ class UsageAnalysisService:
                 ).total_seconds()
 
             hourly_data["last_timestamp"] = timestamp
-            hourly_data["window_name"] = window_name  # 更新为最新的窗口名
+
+        # 选择使用时间最长的窗口名称
+        for hour_key, hourly_data in hourly_app_data.items():
+            if hourly_data["window_names"]:
+                # 找出使用时间最长的窗口名称
+                max_window_name = max(
+                    hourly_data["window_names"].items(), key=lambda x: x[1]
+                )[0]
+                hourly_data["window_name"] = max_window_name
+            # 清理临时数据
+            del hourly_data["window_names"]
 
         # 转换为最终的记录格式
         hourly_records = []
 
         for hour_key, hourly_data in hourly_app_data.items():
+            # 跳过总时间为0的记录
+            if hourly_data["total_time_seconds"] <= 0:
+                continue
+                
             # 匹配应用类别 - 这里已经返回类别ID
             app_category_id = await self._match_app_category(hourly_data["app_name"])
 
             # 创建记录 - 注意timestamp是北京时间
             record = {
                 "app_name": hourly_data["app_name"],
+                "window_name": hourly_data["window_name"],  # 添加窗口名称
                 "category_id": app_category_id,
                 "usage_date": hourly_data["timestamp"].date(),  # 使用北京时间的日期
                 "hour": hourly_data["hour_of_day"],  # 使用北京时间的小时
                 "duration_minutes": round(
                     hourly_data["total_time_seconds"] / 60, 2
                 ),  # 转换为分钟
+                "active_minutes": round(
+                    hourly_data["active_time_seconds"] / 60, 2
+                ),  # 活跃时间（分钟）
+                "session_count": hourly_data["session_count"],  # 会话数
                 "client_id": client_id,
             }
 
@@ -416,12 +451,12 @@ class UsageAnalysisService:
                             logger.warning(
                                 f"未知时间戳类型: {type(timestamp_str)}，使用当前北京时间"
                             )
-                            timestamp = datetime.utcnow() + timedelta(hours=8)
+                            timestamp = datetime.utcnow()
                     except ValueError as e:
                         logger.warning(
                             f"无法解析时间戳: {timestamp_str}，错误: {e}，使用当前北京时间"
                         )
-                        timestamp = datetime.utcnow() + timedelta(hours=8)
+                        timestamp = datetime.utcnow()
 
                     app_usage_data.append(
                         {
