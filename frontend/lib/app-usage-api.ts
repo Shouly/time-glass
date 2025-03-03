@@ -49,15 +49,39 @@ export interface PaginatedResponse<T> {
 
 // 生产力摘要接口
 export interface ProductivitySummary {
+  // 基本信息
   start_date: string;
   end_date: string;
+  
+  // 时间统计（分钟）
+  total_minutes: number;
   productive_minutes: number;
   neutral_minutes: number;
   distracting_minutes: number;
-  total_minutes: number;
+  
+  // 百分比统计
   productive_percentage: number;
   neutral_percentage: number;
   distracting_percentage: number;
+  
+  // 与前一天比较
+  yesterday_total_minutes?: number;
+  yesterday_productive_minutes?: number;
+  yesterday_neutral_minutes?: number;
+  yesterday_distracting_minutes?: number;
+  yesterday_productive_percentage?: number;
+  
+  // 趋势信息
+  total_minutes_change_percentage?: number; // 总时间变化百分比
+  productive_percentage_change?: number; // 效率指数变化（百分点）
+  
+  // 应用统计
+  most_used_app?: string; // 最常用应用
+  most_used_app_percentage?: number; // 最常用应用占比
+  
+  // 异常信息
+  anomaly_count?: number; // 异常行为数量
+  anomaly_description?: string; // 异常描述
 }
 
 // 每日应用使用统计接口

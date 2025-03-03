@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AppUsageApi, DailyAppUsage, HourlyAppUsageSummary, ProductivitySummary, ProductivityType } from '@/lib/app-usage-api'
 import { formatTimeSpent } from "@/lib/utils"
 import { addDays, format, subDays } from "date-fns"
-import { BarChart2, ChevronLeft, ChevronRight, Clock, PieChart, Search } from "lucide-react"
+import { ChevronLeft, ChevronRight, Clock, Search } from "lucide-react"
 import { useEffect, useState } from "react"
 import { DateRange } from "react-day-picker"
 
@@ -47,27 +47,52 @@ export default function AppUsagePage() {
 
       // 使用模拟数据替代API调用
       const mockSummaryData: ProductivitySummary = {
+        // 基本信息
         start_date: startDateStr,
         end_date: endDateStr,
-        productive_minutes: 420, // 7小时
+
+        // 时间统计（分钟）
+        total_minutes: 412, // 6小时52分钟
+        productive_minutes: 320, // 5小时20分钟
         neutral_minutes: 60, // 1小时
-        distracting_minutes: 30, // 30分钟
-        total_minutes: 510, // 8.5小时
-        productive_percentage: 82.35,
-        neutral_percentage: 11.76,
-        distracting_percentage: 5.89
+        distracting_minutes: 32, // 32分钟
+
+        // 百分比统计
+        productive_percentage: 78, // 效率指数
+        neutral_percentage: 14.5,
+        distracting_percentage: 7.5,
+
+        // 与前一天比较
+        yesterday_total_minutes: 380, // 前一天的总时间
+        yesterday_productive_minutes: 277, // 前一天的生产时间
+        yesterday_neutral_minutes: 65, // 前一天的中性时间
+        yesterday_distracting_minutes: 38, // 前一天的干扰时间
+        yesterday_productive_percentage: 73, // 前一天的效率指数
+
+        // 趋势信息
+        total_minutes_change_percentage: 8, // 总时间增加8%
+        productive_percentage_change: 5, // 效率指数增加5个百分点
+
+        // 应用统计
+        most_used_app: 'Visual Studio Code',
+        most_used_app_percentage: 42,
+
+        // 异常信息
+        anomaly_count: 0,
+        anomaly_description: '一切正常'
       }
+
       setProductivitySummary(mockSummaryData)
 
       // 使用模拟数据替代每日应用使用情况API调用
       const mockDailyData: DailyAppUsage[] = [
         {
           date: startDateStr,
-          app_name: 'VS Code',
+          app_name: 'Visual Studio Code',
           category_id: 1,
           category_name: '开发工具',
           productivity_type: ProductivityType.PRODUCTIVE,
-          total_minutes: 240
+          total_minutes: 173 // 占比42%
         },
         {
           date: startDateStr,
@@ -75,15 +100,7 @@ export default function AppUsagePage() {
           category_id: 2,
           category_name: '浏览器',
           productivity_type: ProductivityType.NEUTRAL,
-          total_minutes: 120
-        },
-        {
-          date: startDateStr,
-          app_name: 'Slack',
-          category_id: 3,
-          category_name: '通讯工具',
-          productivity_type: ProductivityType.NEUTRAL,
-          total_minutes: 60
+          total_minutes: 95
         },
         {
           date: startDateStr,
@@ -91,7 +108,15 @@ export default function AppUsagePage() {
           category_id: 1,
           category_name: '开发工具',
           productivity_type: ProductivityType.PRODUCTIVE,
-          total_minutes: 90
+          total_minutes: 82
+        },
+        {
+          date: startDateStr,
+          app_name: 'Slack',
+          category_id: 3,
+          category_name: '通讯工具',
+          productivity_type: ProductivityType.NEUTRAL,
+          total_minutes: 35
         },
         {
           date: startDateStr,
@@ -99,7 +124,7 @@ export default function AppUsagePage() {
           category_id: 4,
           category_name: '会议工具',
           productivity_type: ProductivityType.DISTRACTING,
-          total_minutes: 30
+          total_minutes: 27
         }
       ]
       setDailyUsage(mockDailyData)
@@ -243,12 +268,10 @@ export default function AppUsagePage() {
           category_id: item.category_id,
           category_name: item.category_name,
           productivity_type: item.productivity_type,
-          total_minutes: 0,
-          session_count: 0 // 假设会话数据，实际应从后端获取
+          total_minutes: 0
         }
       }
       acc[key].total_minutes += item.total_minutes
-      acc[key].session_count += 1 // 简化处理，实际应从后端获取
       return acc
     }, {})
 
@@ -259,8 +282,7 @@ export default function AppUsagePage() {
     apps = apps.map((app: any) => ({
       ...app,
       total_time_seconds: app.total_minutes * 60,
-      percentage: (app.total_minutes / totalMinutes) * 100,
-      avg_session_time: (app.total_minutes * 60) / app.session_count
+      percentage: (app.total_minutes / totalMinutes) * 100
     }))
 
     // 应用搜索过滤
@@ -402,98 +424,63 @@ export default function AppUsagePage() {
 
         {/* 概览统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-blue-200/30 dark:border-blue-800/30">
-              <CardTitle className="text-sm font-medium">总使用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-blue-100/80 dark:bg-blue-800/80 flex items-center justify-center shadow-sm">
-                <Clock className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-              </div>
+          <Card className="overflow-hidden border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">今日活跃时间</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">
-                {productivitySummary ? formatTimeSpent(productivitySummary.total_minutes * 60) : "加载中..."}
+                {productivitySummary ? Math.round(productivitySummary.total_minutes) : 0} 分钟
               </div>
-              <p className="text-xs text-muted-foreground mt-1 flex items-center">
-                <span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-1"></span>
-                {dateRange?.from && dateRange.from.toDateString() === new Date().toDateString()
-                  ? "今天"
-                  : dateRange?.from ? format(dateRange.from, "yyyy年M月d日") : ""}
+              {productivitySummary?.total_minutes_change_percentage !== undefined && (
+                <p className={`text-xs ${productivitySummary.total_minutes_change_percentage >= 0 ? 'text-green-500' : 'text-amber-500'} mt-1 flex items-center`}>
+                  {productivitySummary.total_minutes_change_percentage >= 0 ? '↑' : '↓'} {Math.abs(productivitySummary.total_minutes_change_percentage)}% 相比昨天
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">效率指数</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold">
+                {productivitySummary ? Math.round(productivitySummary.productive_percentage) : 0}%
+              </div>
+              {productivitySummary?.productive_percentage_change !== undefined && (
+                <p className={`text-xs ${productivitySummary.productive_percentage_change >= 0 ? 'text-green-500' : 'text-amber-500'} mt-1 flex items-center`}>
+                  {productivitySummary.productive_percentage_change >= 0 ? '↑' : '↓'} {Math.abs(productivitySummary.productive_percentage_change)}% 相比昨天
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">最常用应用</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="text-2xl font-bold">
+                {productivitySummary?.most_used_app || (dailyUsage.length > 0 ? dailyUsage[0].app_name : "Visual Studio Code")}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                占比 {productivitySummary?.most_used_app_percentage || (dailyUsage.length > 0 ? Math.round((dailyUsage[0].total_minutes / (productivitySummary?.total_minutes || 1)) * 100) : 42)}%
               </p>
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950 dark:to-green-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-green-200/30 dark:border-green-800/30">
-              <CardTitle className="text-sm font-medium">生产型应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-green-100/80 dark:bg-green-800/80 flex items-center justify-center shadow-sm">
-                <BarChart2 className="h-4 w-4 text-green-600 dark:text-green-300" />
-              </div>
+          <Card className="overflow-hidden border shadow-sm">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">异常行为</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="text-2xl font-bold">
-                {productivitySummary ? formatTimeSpent(productivitySummary.productive_minutes * 60) : "加载中..."}
+                {productivitySummary?.anomaly_count !== undefined ? productivitySummary.anomaly_count : 0}
               </div>
-              <div className="flex items-center mt-1">
-                <div className="flex-1 h-1.5 bg-green-200 dark:bg-green-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-green-500 rounded-full"
-                    style={{ width: `${productivitySummary?.productive_percentage || 0}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {productivitySummary ? Math.round(productivitySummary.productive_percentage) : 0}%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950 dark:to-blue-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-blue-200/30 dark:border-blue-800/30">
-              <CardTitle className="text-sm font-medium">中性应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-blue-100/80 dark:bg-blue-800/80 flex items-center justify-center shadow-sm">
-                <PieChart className="h-4 w-4 text-blue-600 dark:text-blue-300" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">
-                {productivitySummary ? formatTimeSpent(productivitySummary.neutral_minutes * 60) : "加载中..."}
-              </div>
-              <div className="flex items-center mt-1">
-                <div className="flex-1 h-1.5 bg-blue-200 dark:bg-blue-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-500 rounded-full"
-                    style={{ width: `${productivitySummary?.neutral_percentage || 0}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {productivitySummary ? Math.round(productivitySummary.neutral_percentage) : 0}%
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-0 shadow-md bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950 dark:to-red-900">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 border-b border-red-200/30 dark:border-red-800/30">
-              <CardTitle className="text-sm font-medium">干扰型应用时间</CardTitle>
-              <div className="h-8 w-8 rounded-full bg-red-100/80 dark:bg-red-800/80 flex items-center justify-center shadow-sm">
-                <Clock className="h-4 w-4 text-red-600 dark:text-red-300" />
-              </div>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="text-2xl font-bold">
-                {productivitySummary ? formatTimeSpent(productivitySummary.distracting_minutes * 60) : "加载中..."}
-              </div>
-              <div className="flex items-center mt-1">
-                <div className="flex-1 h-1.5 bg-red-200 dark:bg-red-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-red-500 rounded-full"
-                    style={{ width: `${productivitySummary?.distracting_percentage || 0}%` }}
-                  ></div>
-                </div>
-                <span className="text-xs text-muted-foreground ml-2">
-                  {productivitySummary ? Math.round(productivitySummary.distracting_percentage) : 0}%
-                </span>
-              </div>
+              <p className="text-xs text-amber-500 mt-1">
+                {productivitySummary?.anomaly_description || "一切正常"}
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -627,8 +614,6 @@ export default function AppUsagePage() {
                           <th className="text-left py-3 font-medium text-muted-foreground text-sm">应用</th>
                           <th className="text-left py-3 font-medium text-muted-foreground text-sm">使用时间</th>
                           <th className="text-left py-3 font-medium text-muted-foreground text-sm">占比</th>
-                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">会话数</th>
-                          <th className="text-left py-3 font-medium text-muted-foreground text-sm">平均会话时长</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -666,21 +651,6 @@ export default function AppUsagePage() {
                                   />
                                 </div>
                                 <span className="text-sm">{app.percentage.toFixed(1)}%</span>
-                              </div>
-                            </td>
-                            <td className="py-4">
-                              <div className="flex items-center">
-                                <div className="bg-gray-100 dark:bg-gray-800 rounded-md px-2 py-1 text-sm">
-                                  {app.session_count}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-4">
-                              <div className="font-medium text-sm">
-                                {formatTimeSpent(app.avg_session_time)}
-                              </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                平均每次使用
                               </div>
                             </td>
                           </tr>
