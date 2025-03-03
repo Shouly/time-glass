@@ -143,6 +143,7 @@ async def get_productivity_summary(
     """获取生产力统计摘要"""
     service = AppUsageService(db)
     try:
+        # 获取当前日期范围的生产力数据
         productive_minutes, neutral_minutes, distracting_minutes = (
             await service.get_productivity_summary(
                 start_date=start_date, end_date=end_date
@@ -150,7 +151,74 @@ async def get_productivity_summary(
         )
 
         total_minutes = productive_minutes + neutral_minutes + distracting_minutes
-
+        
+        # 计算生产力百分比
+        productive_percentage = (
+            round(productive_minutes / total_minutes * 100, 2)
+            if total_minutes > 0
+            else 0
+        )
+        neutral_percentage = (
+            round(neutral_minutes / total_minutes * 100, 2)
+            if total_minutes > 0
+            else 0
+        )
+        distracting_percentage = (
+            round(distracting_minutes / total_minutes * 100, 2)
+            if total_minutes > 0
+            else 0
+        )
+        
+        # 获取前一天的数据进行比较
+        yesterday_start = start_date - timedelta(days=1)
+        yesterday_end = end_date - timedelta(days=1)
+        
+        yesterday_productive_minutes, yesterday_neutral_minutes, yesterday_distracting_minutes = (
+            await service.get_productivity_summary(
+                start_date=yesterday_start, end_date=yesterday_end
+            )
+        )
+        
+        yesterday_total_minutes = yesterday_productive_minutes + yesterday_neutral_minutes + yesterday_distracting_minutes
+        
+        # 计算前一天的生产力百分比
+        yesterday_productive_percentage = (
+            round(yesterday_productive_minutes / yesterday_total_minutes * 100, 2)
+            if yesterday_total_minutes > 0
+            else 0
+        )
+        
+        # 计算变化百分比
+        total_minutes_change_percentage = (
+            round((total_minutes - yesterday_total_minutes) / yesterday_total_minutes * 100, 2)
+            if yesterday_total_minutes > 0
+            else 0
+        )
+        
+        # 计算效率指数变化（百分点）
+        productive_percentage_change = round(productive_percentage - yesterday_productive_percentage, 2)
+        
+        # 获取最常用应用及其占比
+        most_used_app_data = await service.get_most_used_app(start_date, end_date)
+        most_used_app = most_used_app_data["app_name"] if most_used_app_data else None
+        most_used_app_percentage = (
+            round(most_used_app_data["total_minutes"] / total_minutes * 100, 2)
+            if most_used_app_data and total_minutes > 0
+            else 0
+        )
+        
+        # 异常检测（简单实现）
+        anomaly_count = 0
+        anomaly_description = "一切正常"
+        
+        # 检查是否有异常情况
+        if distracting_percentage > 30:
+            anomaly_count += 1
+            anomaly_description = "干扰型应用使用时间过长"
+        elif total_minutes > 720:  # 12小时
+            anomaly_count += 1
+            anomaly_description = "使用时间过长，请注意休息"
+        
         return ProductivitySummary(
             start_date=start_date,
             end_date=end_date,
@@ -158,21 +226,21 @@ async def get_productivity_summary(
             neutral_minutes=neutral_minutes,
             distracting_minutes=distracting_minutes,
             total_minutes=total_minutes,
-            productive_percentage=(
-                round(productive_minutes / total_minutes * 100, 2)
-                if total_minutes > 0
-                else 0
-            ),
-            neutral_percentage=(
-                round(neutral_minutes / total_minutes * 100, 2)
-                if total_minutes > 0
-                else 0
-            ),
-            distracting_percentage=(
-                round(distracting_minutes / total_minutes * 100, 2)
-                if total_minutes > 0
-                else 0
-            ),
+            productive_percentage=productive_percentage,
+            neutral_percentage=neutral_percentage,
+            distracting_percentage=distracting_percentage,
+            # 新增字段
+            yesterday_total_minutes=yesterday_total_minutes,
+            yesterday_productive_minutes=yesterday_productive_minutes,
+            yesterday_neutral_minutes=yesterday_neutral_minutes,
+            yesterday_distracting_minutes=yesterday_distracting_minutes,
+            yesterday_productive_percentage=yesterday_productive_percentage,
+            total_minutes_change_percentage=total_minutes_change_percentage,
+            productive_percentage_change=productive_percentage_change,
+            most_used_app=most_used_app,
+            most_used_app_percentage=most_used_app_percentage,
+            anomaly_count=anomaly_count,
+            anomaly_description=anomaly_description,
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"获取生产力统计摘要失败: {str(e)}")

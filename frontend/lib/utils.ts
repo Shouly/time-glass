@@ -7,6 +7,9 @@ export function cn(...inputs: ClassValue[]) {
 
 // 格式化时间（秒）为可读格式
 export function formatTimeSpent(seconds: number): string {
+  // 确保秒数为整数
+  seconds = Math.round(seconds);
+  
   if (seconds < 60) {
     return `${seconds}秒`
   }
@@ -58,7 +61,10 @@ export function getProductivityColor(type: string): string {
 
 // 将秒数转换为小时数（保留1位小数）
 export function secondsToHours(seconds: number): number {
-  return Math.round(seconds / 36) / 100
+  // 确保秒数为整数
+  seconds = Math.round(seconds);
+  // 转换为小时并保留1位小数
+  return Math.round((seconds / 3600) * 10) / 10;
 }
 
 // 获取过去N天的日期数组
@@ -73,4 +79,23 @@ export function getLastNDays(n: number): string[] {
   }
 
   return result
+}
+
+// 将分钟转换为小时和分钟的可读格式
+export function formatMinutes(minutes: number): string {
+  // 确保分钟数为整数
+  minutes = Math.round(minutes);
+  
+  if (minutes < 60) {
+    return `${minutes}分钟`;
+  }
+  
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  
+  if (remainingMinutes === 0) {
+    return `${hours}小时`;
+  }
+  
+  return `${hours}小时${remainingMinutes}分钟`;
 }

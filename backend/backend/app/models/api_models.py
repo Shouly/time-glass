@@ -47,6 +47,25 @@ class ProductivitySummary(BaseModel):
     productive_percentage: float
     neutral_percentage: float
     distracting_percentage: float
+    
+    # 与前一天比较
+    yesterday_total_minutes: Optional[float] = None
+    yesterday_productive_minutes: Optional[float] = None
+    yesterday_neutral_minutes: Optional[float] = None
+    yesterday_distracting_minutes: Optional[float] = None
+    yesterday_productive_percentage: Optional[float] = None
+    
+    # 趋势信息
+    total_minutes_change_percentage: Optional[float] = None  # 总时间变化百分比
+    productive_percentage_change: Optional[float] = None  # 效率指数变化（百分点）
+    
+    # 应用统计
+    most_used_app: Optional[str] = None  # 最常用应用
+    most_used_app_percentage: Optional[float] = None  # 最常用应用占比
+    
+    # 异常信息
+    anomaly_count: Optional[int] = None  # 异常行为数量
+    anomaly_description: Optional[str] = None  # 异常描述
 
 
 # 应用使用统计响应模型

@@ -444,3 +444,37 @@ class AppUsageService:
             })
         
         return result_list
+        
+    async def get_most_used_app(self, start_date: date, end_date: date) -> Optional[Dict[str, Any]]:
+        """获取指定日期范围内使用时间最长的应用"""
+        # 转换日期为datetime
+        start_datetime = datetime.combine(start_date, time.min)
+        end_datetime = datetime.combine(end_date, time.max)
+        
+        # 查询使用时间最长的应用
+        query = (
+            select(
+                HourlyAppUsage.app_name,
+                func.sum(HourlyAppUsage.total_time_seconds / 60).label("total_minutes"),
+            )
+            .where(
+                and_(
+                    HourlyAppUsage.timestamp >= start_datetime,
+                    HourlyAppUsage.timestamp <= end_datetime,
+                )
+            )
+            .group_by(HourlyAppUsage.app_name)
+            .order_by(desc("total_minutes"))
+            .limit(1)
+        )
+        
+        result = await self.db.execute(query)
+        most_used_app = result.first()
+        
+        if most_used_app:
+            return {
+                "app_name": most_used_app.app_name,
+                "total_minutes": most_used_app.total_minutes,
+            }
+        
+        return None
