@@ -20,11 +20,6 @@ export default function Home() {
                 </p>
               </div>
               <div className="flex flex-col gap-2 min-[400px]:flex-row">
-                <Link href="/dashboard">
-                  <Button size="lg" className="gap-1">
-                    进入仪表盘 <ArrowRight className="h-4 w-4" />
-                  </Button>
-                </Link>
                 <Link href="/productivity">
                   <Button size="lg" variant="outline" className="gap-1">
                     生产力分析

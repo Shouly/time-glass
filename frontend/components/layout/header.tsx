@@ -20,7 +20,6 @@ export function Header() {
 
   const navItems = [
     { href: "/", label: "首页" },
-    { href: "/dashboard", label: "仪表盘" },
     { href: "/productivity/app-usage", label: "应用使用分析", icon: <BarChart2 className="mr-2 h-4 w-4" /> },
     { href: "/ui-monitoring", label: "UI监控", icon: <Monitor className="mr-2 h-4 w-4" /> },
     { href: "/ocr-text", label: "OCR文本", icon: <EyeIcon className="mr-2 h-4 w-4" /> },
