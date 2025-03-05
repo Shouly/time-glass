@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -37,7 +37,6 @@ interface Client {
 }
 
 export function ClientList() {
-  const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -57,11 +56,7 @@ export function ClientList() {
       setClients(data.clients);
     } catch (error) {
       console.error("获取客户端列表错误:", error);
-      toast({
-        title: "错误",
-        description: "获取客户端列表失败，请稍后重试",
-        variant: "destructive",
-      });
+      toast.error("获取客户端列表失败，请稍后重试");
     } finally {
       setLoading(false);
     }
@@ -80,19 +75,12 @@ export function ClientList() {
       }
       
       const data = await response.json();
-      toast({
-        title: "成功",
-        description: `已向客户端 ${clientId} 发送锁屏命令`,
-      });
+      toast.success(`已向客户端 ${clientId} 发送锁屏命令`);
       
       return data.command_id;
     } catch (error) {
       console.error("发送锁屏命令错误:", error);
-      toast({
-        title: "错误",
-        description: "发送锁屏命令失败，请稍后重试",
-        variant: "destructive",
-      });
+      toast.error("发送锁屏命令失败，请稍后重试");
       return null;
     } finally {
       setCommandLoading(false);
@@ -116,19 +104,12 @@ export function ClientList() {
       }
       
       const data = await response.json();
-      toast({
-        title: "成功",
-        description: `已向客户端 ${clientId} 发送关机命令，延迟 ${delaySeconds} 秒`,
-      });
+      toast.success(`已向客户端 ${clientId} 发送关机命令，延迟 ${delaySeconds} 秒`);
       
       return data.command_id;
     } catch (error) {
       console.error("发送关机命令错误:", error);
-      toast({
-        title: "错误",
-        description: "发送关机命令失败，请稍后重试",
-        variant: "destructive",
-      });
+      toast.error("发送关机命令失败，请稍后重试");
       return null;
     } finally {
       setCommandLoading(false);

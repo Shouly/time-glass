@@ -8,17 +8,12 @@ import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { InfoIcon } from "lucide-react";
 import { useState } from "react";
-import { Helmet } from "react-helmet";
 
 export default function RemoteControlPage() {
     const [activeTab, setActiveTab] = useState("clients");
 
     return (
         <div className="container py-6 space-y-6">
-            <Helmet>
-                <title>远程控制 | Time Glass</title>
-            </Helmet>
-
             <PageHeader
                 title="远程控制"
                 description="管理和控制连接的客户端设备"

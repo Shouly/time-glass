@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -26,7 +26,6 @@ interface CommandResult {
 }
 
 export function CommandHistory() {
-  const { toast } = useToast();
   const [commandResults, setCommandResults] = useState<CommandResult[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -44,11 +43,7 @@ export function CommandHistory() {
       setCommandResults(data.results || []);
     } catch (error) {
       console.error("获取命令历史错误:", error);
-      toast({
-        title: "错误",
-        description: "获取命令历史失败，请稍后重试",
-        variant: "destructive",
-      });
+      toast.error("获取命令历史失败，请稍后重试");
       // 如果API不存在，使用模拟数据
       setCommandResults([
         {
@@ -131,11 +126,11 @@ export function CommandHistory() {
                     <TableCell>{result.client_id}</TableCell>
                     <TableCell>
                       {result.success ? (
-                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
                           成功
                         </Badge>
                       ) : (
-                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                        <Badge className="bg-red-100 text-red-800 border-red-200">
                           失败
                         </Badge>
                       )}
