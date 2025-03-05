@@ -4,6 +4,8 @@ from typing import Any, Dict, Generic, List, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
+from .plugin import PluginStatus, PluginVisibility
+
 
 # 生产力类型枚举
 class ProductivityTypeEnum(str, Enum):
@@ -99,3 +101,97 @@ class HourlyAppUsageSummary(BaseModel):
     app_name: str
     duration_minutes: float
     productivity_type: ProductivityTypeEnum
+
+
+# 插件相关模型
+
+# 插件基础模型
+class PluginBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    tags: Optional[List[str]] = None
+    status: PluginStatus = PluginStatus.ACTIVE
+    visibility: PluginVisibility = PluginVisibility.PRIVATE
+
+
+# 创建插件请求模型
+class PluginCreate(PluginBase):
+    pass
+
+
+# 更新插件请求模型
+class PluginUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    icon: Optional[str] = None
+    tags: Optional[List[str]] = None
+    status: Optional[PluginStatus] = None
+    visibility: Optional[PluginVisibility] = None
+
+
+# 插件版本基础模型
+class PluginVersionBase(BaseModel):
+    version: str
+    changelog: Optional[str] = None
+    min_app_version: Optional[str] = None
+    dependencies: Optional[Dict[str, str]] = None
+
+
+# 创建插件版本请求模型
+class PluginVersionCreate(PluginVersionBase):
+    pass
+
+
+# 插件版本响应模型
+class PluginVersionResponse(PluginVersionBase):
+    id: int
+    plugin_id: int
+    zip_url: str
+    zip_hash: str
+    zip_size: int
+    created_at: datetime
+    is_latest: bool
+    download_count: int
+
+    class Config:
+        orm_mode = True
+
+
+# 插件响应模型
+class PluginResponse(PluginBase):
+    id: int
+    created_at: datetime
+    updated_at: datetime
+    downloads_count: int
+    versions: List[PluginVersionResponse] = []
+
+    class Config:
+        orm_mode = True
+
+
+# 插件更新检查请求模型
+class PluginUpdateCheckItem(BaseModel):
+    pipe_id: str
+    version: str
+
+
+class PluginUpdateCheckRequest(BaseModel):
+    plugins: List[PluginUpdateCheckItem]
+
+
+# 插件更新检查响应项模型
+class PluginUpdateCheckResultItem(BaseModel):
+    pipe_id: str
+    has_update: bool
+    current_version: str
+    latest_version: str
+    latest_file_hash: Optional[str] = None
+    latest_file_size: Optional[int] = None
+    download_url: Optional[str] = None
+    changelog: Optional[str] = None
+
+
+# 插件更新检查响应模型
+class PluginUpdateCheckResponse(BaseModel):
+    results: List[PluginUpdateCheckResultItem]

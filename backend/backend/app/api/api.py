@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from .endpoints import data, query, app_usage, remote_control
+from .endpoints import data, query, app_usage, remote_control, plugin
 
 api_router = APIRouter()
 
@@ -13,4 +13,7 @@ api_router.include_router(query.router, prefix="/query", tags=["query"])
 api_router.include_router(app_usage.router, prefix="/app-usage", tags=["app-usage"])
 
 # 添加远程控制路由
-api_router.include_router(remote_control.router, prefix="/remote-control", tags=["remote-control"]) 
+api_router.include_router(remote_control.router, prefix="/remote-control", tags=["remote-control"])
+
+# 添加插件管理路由
+api_router.include_router(plugin.router, prefix="/plugin", tags=["plugin"]) 

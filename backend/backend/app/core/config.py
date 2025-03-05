@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     
     # 其他配置
     DEBUG: bool = os.getenv("DEBUG", "True").lower() == "true"
+    
+    # 插件配置
+    PLUGIN_STORAGE_PATH: str = os.getenv("PLUGIN_STORAGE_PATH", os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "storage", "plugins"))
 
 settings = Settings()
 

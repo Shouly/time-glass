@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { BarChart2, Menu, Monitor, EyeIcon, LockIcon } from "lucide-react";
+import { BarChart2, Menu, Monitor, EyeIcon, LockIcon, Puzzle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -24,6 +24,7 @@ export function Header() {
     { href: "/ui-monitoring", label: "UI监控", icon: <Monitor className="mr-2 h-4 w-4" /> },
     { href: "/ocr-text", label: "OCR文本", icon: <EyeIcon className="mr-2 h-4 w-4" /> },
     { href: "/remote-control", label: "远程控制", icon: <LockIcon className="mr-2 h-4 w-4" /> },
+    { href: "/plugin-management", label: "插件管理", icon: <Puzzle className="mr-2 h-4 w-4" /> },
     { href: "/about", label: "关于" },
   ];
 
