@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, LockIcon, PowerIcon, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { ClientConnection, getClients, sendLockScreenCommand, sendShutdownCommand } from "@/lib/api";
+import { ClientConnection, getClients, sendLockScreenCommand, sendShutdownCommand } from "@/lib/remote-control-api";
 
 export function ClientList() {
   const [clients, setClients] = useState<ClientConnection[]>([]);
