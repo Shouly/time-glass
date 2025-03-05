@@ -7,6 +7,7 @@ from .api.api import api_router
 from .core.config import settings
 from .db.elasticsearch import init_es, close_es
 from .services.scheduled_tasks import schedule_tasks
+from .services.remote_control_service import remote_control_service
 
 # 配置日志
 logging.basicConfig(
@@ -43,15 +44,28 @@ async def startup_event():
     logger.info("Starting up Time Glass API")
     await init_es()
     
+    # 启动远程控制服务
+    await remote_control_service.start()
+    logger.info("Remote control service started")
+    
     # 启动定时任务
     if settings.ENABLE_SCHEDULED_TASKS:
         logger.info("Starting scheduled tasks")
         asyncio.create_task(schedule_tasks())
+    
+    # 打印所有路由，用于调试
+    for route in app.routes:
+        logger.info(f"路由: {route.path} [{', '.join(route.methods) if hasattr(route, 'methods') else 'WebSocket'}]")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """应用关闭时执行的操作"""
     logger.info("Shutting down Time Glass API")
+    
+    # 停止远程控制服务
+    await remote_control_service.stop()
+    logger.info("Remote control service stopped")
+    
     await close_es()
 
 @app.get("/")
