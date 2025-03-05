@@ -139,4 +139,62 @@ export async function getOcrTextWindows(clientId?: string, appName?: string): Pr
 
   const response = await api.get('/query/ocr-text/windows', { params });
   return response.data;
+}
+
+// 远程控制接口
+export interface ClientConnection {
+  client_id: string;
+  connected_at: string;
+  last_heartbeat: string;
+  is_active: boolean;
+  metadata?: Record<string, any>;
+}
+
+export interface ClientListResponse {
+  clients: ClientConnection[];
+  total: number;
+}
+
+export interface CommandResult {
+  command_id: string;
+  success: boolean;
+  message: string;
+  timestamp: string;
+  client_id: string;
+}
+
+export interface CommandResultsResponse {
+  results: CommandResult[];
+  total: number;
+}
+
+// 远程控制API函数
+export async function getClients(): Promise<ClientListResponse> {
+  const response = await api.get('/remote-control/clients');
+  return response.data;
+}
+
+export async function getClient(clientId: string): Promise<ClientConnection> {
+  const response = await api.get(`/remote-control/clients/${clientId}`);
+  return response.data;
+}
+
+export async function sendLockScreenCommand(clientId: string): Promise<{ command_id: string }> {
+  const response = await api.post(`/remote-control/clients/${clientId}/lock-screen`);
+  return response.data;
+}
+
+export async function sendShutdownCommand(clientId: string, delaySeconds: number = 0): Promise<{ command_id: string }> {
+  const response = await api.post(`/remote-control/clients/${clientId}/shutdown?delay_seconds=${delaySeconds}`);
+  return response.data;
+}
+
+export async function getCommandResults(): Promise<CommandResultsResponse> {
+  const response = await api.get('/remote-control/commands');
+  return response.data;
+}
+
+export async function getCommandResult(commandId: string): Promise<CommandResult> {
+  const response = await api.get(`/remote-control/commands/${commandId}`);
+  return response.data;
 } 

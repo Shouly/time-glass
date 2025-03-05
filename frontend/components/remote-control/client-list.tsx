@@ -26,20 +26,12 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, LockIcon, PowerIcon, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-
-// 客户端类型定义
-interface Client {
-  client_id: string;
-  connected_at: string;
-  last_heartbeat: string;
-  is_active: boolean;
-  metadata?: Record<string, any>;
-}
+import { ClientConnection, getClients, sendLockScreenCommand, sendShutdownCommand } from "@/lib/api";
 
 export function ClientList() {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientConnection[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [selectedClient, setSelectedClient] = useState<ClientConnection | null>(null);
   const [shutdownDelay, setShutdownDelay] = useState(0);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [commandLoading, setCommandLoading] = useState(false);
@@ -48,12 +40,8 @@ export function ClientList() {
   const fetchClients = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/v1/remote-control/clients");
-      if (!response.ok) {
-        throw new Error("获取客户端列表失败");
-      }
-      const data = await response.json();
-      setClients(data.clients);
+      const response = await getClients();
+      setClients(response.clients);
     } catch (error) {
       console.error("获取客户端列表错误:", error);
       toast.error("获取客户端列表失败，请稍后重试");
@@ -63,21 +51,12 @@ export function ClientList() {
   };
 
   // 发送锁屏命令
-  const sendLockScreenCommand = async (clientId: string) => {
+  const handleLockScreen = async (clientId: string) => {
     setCommandLoading(true);
     try {
-      const response = await fetch(`/api/v1/remote-control/clients/${clientId}/lock-screen`, {
-        method: "POST",
-      });
-      
-      if (!response.ok) {
-        throw new Error("发送锁屏命令失败");
-      }
-      
-      const data = await response.json();
+      const response = await sendLockScreenCommand(clientId);
       toast.success(`已向客户端 ${clientId} 发送锁屏命令`);
-      
-      return data.command_id;
+      return response.command_id;
     } catch (error) {
       console.error("发送锁屏命令错误:", error);
       toast.error("发送锁屏命令失败，请稍后重试");
@@ -89,24 +68,12 @@ export function ClientList() {
   };
 
   // 发送关机命令
-  const sendShutdownCommand = async (clientId: string, delaySeconds: number) => {
+  const handleShutdown = async (clientId: string, delaySeconds: number) => {
     setCommandLoading(true);
     try {
-      const response = await fetch(
-        `/api/v1/remote-control/clients/${clientId}/shutdown?delay_seconds=${delaySeconds}`,
-        {
-          method: "POST",
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error("发送关机命令失败");
-      }
-      
-      const data = await response.json();
+      const response = await sendShutdownCommand(clientId, delaySeconds);
       toast.success(`已向客户端 ${clientId} 发送关机命令，延迟 ${delaySeconds} 秒`);
-      
-      return data.command_id;
+      return response.command_id;
     } catch (error) {
       console.error("发送关机命令错误:", error);
       toast.error("发送关机命令失败，请稍后重试");
@@ -248,7 +215,7 @@ export function ClientList() {
                               </Button>
                               <Button
                                 variant="destructive"
-                                onClick={() => sendShutdownCommand(client.client_id, shutdownDelay)}
+                                onClick={() => handleShutdown(client.client_id, shutdownDelay)}
                                 disabled={commandLoading}
                               >
                                 {commandLoading ? (
@@ -288,7 +255,7 @@ export function ClientList() {
             </Button>
             <Button
               variant="default"
-              onClick={() => selectedClient && sendLockScreenCommand(selectedClient.client_id)}
+              onClick={() => selectedClient && handleLockScreen(selectedClient.client_id)}
               disabled={commandLoading}
             >
               {commandLoading ? (

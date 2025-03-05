@@ -15,15 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, RefreshCw } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
-
-// 命令结果类型定义
-interface CommandResult {
-  command_id: string;
-  success: boolean;
-  message: string;
-  timestamp: string;
-  client_id: string;
-}
+import { CommandResult, getCommandResults } from "@/lib/api";
 
 export function CommandHistory() {
   const [commandResults, setCommandResults] = useState<CommandResult[]>([]);
@@ -33,14 +25,8 @@ export function CommandHistory() {
   const fetchCommandHistory = async () => {
     setLoading(true);
     try {
-      // 这里假设有一个API端点可以获取命令历史
-      // 实际实现中可能需要调整
-      const response = await fetch("/api/v1/remote-control/commands");
-      if (!response.ok) {
-        throw new Error("获取命令历史失败");
-      }
-      const data = await response.json();
-      setCommandResults(data.results || []);
+      const response = await getCommandResults();
+      setCommandResults(response.results || []);
     } catch (error) {
       console.error("获取命令历史错误:", error);
       toast.error("获取命令历史失败，请稍后重试");
