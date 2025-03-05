@@ -9,9 +9,19 @@ from fastapi import WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 from ..core.config import settings
-from ..models.remote_control import RemoteCommand, CommandResult, ClientConnection
+from ..models.remote_control import RemoteCommand, CommandResult, ClientConnection, RemoteCommandType
 
 logger = logging.getLogger(__name__)
+
+
+# 自定义JSON编码器，处理datetime对象
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, RemoteCommandType):
+            return obj.value
+        return super().default(obj)
 
 
 class RemoteControlService:
@@ -73,11 +83,13 @@ class RemoteControlService:
 
     async def disconnect(self, client_id: str):
         """处理WebSocket断开连接"""
-        if client_id in self.active_connections:
-            websocket = self.active_connections[client_id]
-            if websocket.client_state != WebSocketState.DISCONNECTED:
-                await websocket.close()
-            del self.active_connections[client_id]
+        if client_id not in self.active_connections:
+            return
+            
+        websocket = self.active_connections[client_id]
+        if websocket.client_state != WebSocketState.DISCONNECTED:
+            await websocket.close()
+        del self.active_connections[client_id]
         
         if client_id in self.client_info:
             self.client_info[client_id].is_active = False
@@ -93,6 +105,7 @@ class RemoteControlService:
             
             # 发送心跳响应
             await self.send_message(client_id, {
+                "id": str(uuid.uuid4()),
                 "type": "heartbeat_ack",
                 "timestamp": datetime.now().isoformat()
             })
@@ -125,14 +138,35 @@ class RemoteControlService:
         # 存储待处理命令
         self.pending_commands[command.id] = command
         
-        # 发送命令
-        await self.send_message(client_id, {
-            "type": "command",
-            "command": command.dict()
-        })
+        # 直接发送命令，而不是嵌套在message中
+        # 客户端期望直接接收RemoteCommand对象
+        command_dict = {
+            "id": command.id,
+            "type_": command.type.value,  # 注意这里使用type_而不是type
+            "params": command.params,
+            "timestamp": command.timestamp.isoformat(),
+        }
         
-        logger.info(f"Command sent to {client_id}: {command.dict()}")
+        # 发送命令
+        await self.send_raw_message(client_id, command_dict)
+        
+        logger.info(f"Command sent to {client_id}: {command_dict}")
         return command.id
+
+    async def send_raw_message(self, client_id: str, message: Dict[str, Any]):
+        """直接发送原始消息到客户端，不添加额外的包装"""
+        if client_id not in self.active_connections:
+            logger.warning(f"Attempted to send message to disconnected client: {client_id}")
+            return
+        
+        websocket = self.active_connections[client_id]
+        try:
+            # 使用自定义编码器处理datetime对象
+            json_str = json.dumps(message, cls=DateTimeEncoder)
+            await websocket.send_text(json_str)
+        except Exception as e:
+            logger.error(f"Error sending message to client {client_id}: {str(e)}")
+            await self.disconnect(client_id)
 
     async def send_message(self, client_id: str, message: Dict[str, Any]):
         """发送消息到客户端"""
@@ -142,7 +176,9 @@ class RemoteControlService:
         
         websocket = self.active_connections[client_id]
         try:
-            await websocket.send_text(json.dumps(message))
+            # 使用自定义编码器处理datetime对象
+            json_str = json.dumps(message, cls=DateTimeEncoder)
+            await websocket.send_text(json_str)
         except Exception as e:
             logger.error(f"Error sending message to client {client_id}: {str(e)}")
             await self.disconnect(client_id)

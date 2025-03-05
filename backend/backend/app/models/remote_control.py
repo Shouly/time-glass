@@ -6,8 +6,8 @@ from datetime import datetime
 
 class RemoteCommandType(str, Enum):
     """远程命令类型"""
-    LOCK_SCREEN = "lock_screen"  # 锁定屏幕
-    SHUTDOWN = "shutdown"  # 关机
+    LOCK_SCREEN = "LockScreen"  # 锁定屏幕
+    SHUTDOWN = "Shutdown"  # 关机
     # 可以根据需要添加更多命令类型
 
 
@@ -18,6 +18,11 @@ class RemoteCommand(BaseModel):
     params: Optional[Dict[str, Any]] = None  # 命令参数
     timestamp: datetime = Field(default_factory=datetime.now)  # 命令时间戳
     client_id: str  # 目标客户端ID
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda dt: dt.isoformat()
+        }
 
 
 class CommandResult(BaseModel):
@@ -27,6 +32,11 @@ class CommandResult(BaseModel):
     message: str  # 结果消息
     timestamp: datetime = Field(default_factory=datetime.now)  # 执行时间戳
     client_id: str  # 客户端ID
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda dt: dt.isoformat()
+        }
 
 
 class ClientConnection(BaseModel):
@@ -36,6 +46,11 @@ class ClientConnection(BaseModel):
     last_heartbeat: datetime = Field(default_factory=datetime.now)  # 最后心跳时间
     is_active: bool = True  # 是否活跃
     metadata: Optional[Dict[str, Any]] = None  # 客户端元数据
+    
+    class Config:
+        json_encoders = {
+            datetime: lambda dt: dt.isoformat()
+        }
 
 
 class ClientListResponse(BaseModel):
