@@ -7,7 +7,9 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from fastapi import UploadFile, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import desc
+from sqlalchemy.future import select
 
 from backend.app.models.plugin import Plugin, PluginVersion
 from backend.app.models.api_models import (
@@ -19,27 +21,30 @@ from backend.app.core.config import settings
 
 class PluginService:
     @staticmethod
-    def get_plugins(db: Session, skip: int = 0, limit: int = 100):
+    async def get_plugins(db: AsyncSession, skip: int = 0, limit: int = 100):
         """获取插件列表"""
-        return db.query(Plugin).offset(skip).limit(limit).all()
+        result = await db.execute(select(Plugin).offset(skip).limit(limit))
+        return result.scalars().all()
 
     @staticmethod
-    def get_plugin(db: Session, plugin_id: int):
+    async def get_plugin(db: AsyncSession, plugin_id: int):
         """根据ID获取插件"""
-        return db.query(Plugin).filter(Plugin.id == plugin_id).first()
+        result = await db.execute(select(Plugin).filter(Plugin.id == plugin_id))
+        return result.scalars().first()
 
     @staticmethod
-    def get_plugin_by_name(db: Session, name: str):
+    async def get_plugin_by_name(db: AsyncSession, name: str):
         """根据名称获取插件"""
-        return db.query(Plugin).filter(Plugin.name == name).first()
+        result = await db.execute(select(Plugin).filter(Plugin.name == name))
+        return result.scalars().first()
 
     @staticmethod
-    def create_plugin(db: Session, plugin: PluginCreate):
+    async def create_plugin(db: AsyncSession, plugin: PluginCreate):
         """创建新插件"""
         db_plugin = Plugin(**plugin.dict())
         db.add(db_plugin)
-        db.commit()
-        db.refresh(db_plugin)
+        await db.commit()
+        await db.refresh(db_plugin)
         return db_plugin
 
     @staticmethod

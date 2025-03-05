@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Path, Query, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ...db.mysql import get_db
 from backend.app.models.api_models import (
@@ -18,39 +19,39 @@ router = APIRouter()
 
 # 管理API端点
 @router.post("/admin/plugins", response_model=PluginResponse, status_code=status.HTTP_201_CREATED)
-def create_plugin(
+async def create_plugin(
     plugin: PluginCreate,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """创建新插件"""
-    db_plugin = PluginService.get_plugin_by_name(db, plugin.name)
+    db_plugin = await PluginService.get_plugin_by_name(db, plugin.name)
     if db_plugin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Plugin with this name already exists"
         )
-    return PluginService.create_plugin(db, plugin)
+    return await PluginService.create_plugin(db, plugin)
 
 
 @router.get("/admin/plugins", response_model=List[PluginResponse])
-def get_plugins(
+async def get_plugins(
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取插件列表"""
-    plugins = PluginService.get_plugins(db, skip, limit)
+    plugins = await PluginService.get_plugins(db, skip, limit)
     return plugins
 
 
 @router.get("/admin/plugins/{plugin_id}", response_model=PluginResponse)
-def get_plugin(
+async def get_plugin(
     plugin_id: int = Path(..., title="插件ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取插件详情"""
-    db_plugin = PluginService.get_plugin(db, plugin_id)
-    if not db_plugin:
+    db_plugin = await PluginService.get_plugin(db, plugin_id)
+    if db_plugin is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Plugin not found"
