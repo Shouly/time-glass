@@ -1,6 +1,5 @@
 "use client";
 
-import { PageHeader } from "@/components/layout/page-header";
 import { ClientList } from "@/components/remote-control/client-list";
 import { CommandHistory } from "@/components/remote-control/command-history";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -14,10 +13,12 @@ export default function RemoteControlPage() {
 
     return (
         <div className="container py-6 space-y-6">
-            <PageHeader
-                title="远程控制"
-                description="管理和控制连接的客户端设备"
-            />
+            <div className="flex flex-col gap-2">
+                <h1 className="text-3xl font-bold tracking-tight">远程控制</h1>
+                <p className="text-muted-foreground">
+                    管理和控制连接的客户端设备，发送锁屏或关机命令
+                </p>
+            </div>
 
             <Alert>
                 <InfoIcon className="h-4 w-4" />
