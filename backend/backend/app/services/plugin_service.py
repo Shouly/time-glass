@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import desc
 from sqlalchemy.future import select
+from sqlalchemy.orm import selectinload
 
 from backend.app.models.plugin import Plugin, PluginVersion
 from backend.app.models.api_models import (
@@ -23,13 +24,22 @@ class PluginService:
     @staticmethod
     async def get_plugins(db: AsyncSession, skip: int = 0, limit: int = 100):
         """获取插件列表"""
-        result = await db.execute(select(Plugin).offset(skip).limit(limit))
+        result = await db.execute(
+            select(Plugin)
+            .options(selectinload(Plugin.versions))
+            .offset(skip)
+            .limit(limit)
+        )
         return result.scalars().all()
 
     @staticmethod
     async def get_plugin(db: AsyncSession, plugin_id: int):
         """根据ID获取插件"""
-        result = await db.execute(select(Plugin).filter(Plugin.id == plugin_id))
+        result = await db.execute(
+            select(Plugin)
+            .options(selectinload(Plugin.versions))
+            .filter(Plugin.id == plugin_id)
+        )
         return result.scalars().first()
 
     @staticmethod
@@ -48,63 +58,80 @@ class PluginService:
         return db_plugin
 
     @staticmethod
-    def update_plugin(db: Session, plugin_id: int, plugin_update: PluginUpdate):
+    async def update_plugin(db: AsyncSession, plugin_id: int, plugin_update: PluginUpdate):
         """更新插件信息"""
-        db_plugin = PluginService.get_plugin(db, plugin_id)
+        db_plugin = await PluginService.get_plugin(db, plugin_id)
         if not db_plugin:
             return None
-
+        
+        # 更新字段
         update_data = plugin_update.dict(exclude_unset=True)
         for key, value in update_data.items():
             setattr(db_plugin, key, value)
-
-        db_plugin.updated_at = datetime.utcnow()
-        db.commit()
-        db.refresh(db_plugin)
+        
+        await db.commit()
+        await db.refresh(db_plugin)
         return db_plugin
 
     @staticmethod
-    def delete_plugin(db: Session, plugin_id: int):
+    async def delete_plugin(db: AsyncSession, plugin_id: int):
         """删除插件"""
-        db_plugin = PluginService.get_plugin(db, plugin_id)
+        db_plugin = await PluginService.get_plugin(db, plugin_id)
         if not db_plugin:
             return False
 
-        db.delete(db_plugin)
-        db.commit()
+        await db.delete(db_plugin)
+        await db.commit()
         return True
 
     @staticmethod
-    def get_plugin_versions(db: Session, plugin_id: int, skip: int = 0, limit: int = 100):
+    async def get_plugin_versions(db: AsyncSession, plugin_id: int, skip: int = 0, limit: int = 100):
         """获取插件版本列表"""
-        return db.query(PluginVersion).filter(
-            PluginVersion.plugin_id == plugin_id
-        ).order_by(desc(PluginVersion.created_at)).offset(skip).limit(limit).all()
+        result = await db.execute(
+            select(PluginVersion)
+            .filter(PluginVersion.plugin_id == plugin_id)
+            .order_by(desc(PluginVersion.created_at))
+            .offset(skip)
+            .limit(limit)
+        )
+        return result.scalars().all()
 
     @staticmethod
-    def get_plugin_version(db: Session, version_id: int):
+    async def get_plugin_version(db: AsyncSession, version_id: int):
         """根据ID获取插件版本"""
-        return db.query(PluginVersion).filter(PluginVersion.id == version_id).first()
+        result = await db.execute(
+            select(PluginVersion)
+            .filter(PluginVersion.id == version_id)
+        )
+        return result.scalars().first()
 
     @staticmethod
-    def get_plugin_version_by_version(db: Session, plugin_id: int, version: str):
+    async def get_plugin_version_by_version(db: AsyncSession, plugin_id: int, version: str):
         """根据版本号获取插件版本"""
-        return db.query(PluginVersion).filter(
-            PluginVersion.plugin_id == plugin_id,
-            PluginVersion.version == version
-        ).first()
+        result = await db.execute(
+            select(PluginVersion)
+            .filter(
+                PluginVersion.plugin_id == plugin_id,
+                PluginVersion.version == version
+            )
+        )
+        return result.scalars().first()
 
     @staticmethod
-    def get_latest_plugin_version(db: Session, plugin_id: int):
+    async def get_latest_plugin_version(db: AsyncSession, plugin_id: int):
         """获取插件的最新版本"""
-        return db.query(PluginVersion).filter(
-            PluginVersion.plugin_id == plugin_id,
-            PluginVersion.is_latest == True
-        ).first()
+        result = await db.execute(
+            select(PluginVersion)
+            .filter(
+                PluginVersion.plugin_id == plugin_id,
+                PluginVersion.is_latest == True
+            )
+        )
+        return result.scalars().first()
 
     @staticmethod
     async def create_plugin_version(
-        db: Session, 
+        db: AsyncSession, 
         plugin_id: int, 
         version_data: PluginVersionCreate, 
         zip_file: UploadFile
@@ -163,7 +190,7 @@ class PluginService:
             zip_url = f"/plugins/{plugin_id}/versions/{version_data.version}/download"
             
             # 更新之前的最新版本
-            latest_version = PluginService.get_latest_plugin_version(db, plugin_id)
+            latest_version = await PluginService.get_latest_plugin_version(db, plugin_id)
             if latest_version:
                 latest_version.is_latest = False
                 db.add(latest_version)
@@ -188,12 +215,16 @@ class PluginService:
             return db_version
 
     @staticmethod
-    def delete_plugin_version(db: Session, plugin_id: int, version_id: int):
+    async def delete_plugin_version(db: AsyncSession, plugin_id: int, version_id: int):
         """删除插件版本"""
-        db_version = db.query(PluginVersion).filter(
-            PluginVersion.id == version_id,
-            PluginVersion.plugin_id == plugin_id
-        ).first()
+        result = await db.execute(
+            select(PluginVersion)
+            .filter(
+                PluginVersion.id == version_id,
+                PluginVersion.plugin_id == plugin_id
+            )
+        )
+        db_version = result.scalars().first()
         
         if not db_version:
             return False
@@ -201,10 +232,15 @@ class PluginService:
         # 如果是最新版本，需要更新其他版本的状态
         if db_version.is_latest:
             # 找到下一个最新版本
-            next_latest = db.query(PluginVersion).filter(
-                PluginVersion.plugin_id == plugin_id,
-                PluginVersion.id != version_id
-            ).order_by(desc(PluginVersion.created_at)).first()
+            result = await db.execute(
+                select(PluginVersion)
+                .filter(
+                    PluginVersion.plugin_id == plugin_id,
+                    PluginVersion.id != version_id
+                )
+                .order_by(desc(PluginVersion.created_at))
+            )
+            next_latest = result.scalars().first()
             
             if next_latest:
                 next_latest.is_latest = True
@@ -223,8 +259,8 @@ class PluginService:
             # 记录错误但继续删除数据库记录
             print(f"Error deleting plugin version files: {e}")
         
-        db.delete(db_version)
-        db.commit()
+        await db.delete(db_version)
+        await db.commit()
         return True
 
     @staticmethod

@@ -60,13 +60,13 @@ async def get_plugin(
 
 
 @router.put("/admin/plugins/{plugin_id}", response_model=PluginResponse)
-def update_plugin(
+async def update_plugin(
     plugin_update: PluginUpdate,
     plugin_id: int = Path(..., title="插件ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """更新插件信息"""
-    db_plugin = PluginService.update_plugin(db, plugin_id, plugin_update)
+    db_plugin = await PluginService.update_plugin(db, plugin_id, plugin_update)
     if not db_plugin:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -76,12 +76,12 @@ def update_plugin(
 
 
 @router.delete("/admin/plugins/{plugin_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_plugin(
+async def delete_plugin(
     plugin_id: int = Path(..., title="插件ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """删除插件"""
-    result = PluginService.delete_plugin(db, plugin_id)
+    result = await PluginService.delete_plugin(db, plugin_id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -98,7 +98,7 @@ async def create_plugin_version(
     min_app_version: Optional[str] = Form(None, title="最低应用版本"),
     dependencies: Optional[str] = Form(None, title="依赖项（JSON格式）"),
     zip_file: UploadFile = File(..., title="ZIP文件"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """上传新版本"""
     # 创建版本数据对象
@@ -125,33 +125,25 @@ async def create_plugin_version(
 
 
 @router.get("/admin/plugins/{plugin_id}/versions", response_model=List[PluginVersionResponse])
-def get_plugin_versions(
+async def get_plugin_versions(
     plugin_id: int = Path(..., title="插件ID"),
     skip: int = 0,
     limit: int = 100,
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """获取插件版本列表"""
-    # 检查插件是否存在
-    db_plugin = PluginService.get_plugin(db, plugin_id)
-    if not db_plugin:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Plugin not found"
-        )
-    
-    versions = PluginService.get_plugin_versions(db, plugin_id, skip, limit)
+    versions = await PluginService.get_plugin_versions(db, plugin_id, skip, limit)
     return versions
 
 
 @router.delete("/admin/plugins/{plugin_id}/versions/{version_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_plugin_version(
+async def delete_plugin_version(
     plugin_id: int = Path(..., title="插件ID"),
     version_id: int = Path(..., title="版本ID"),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """删除插件版本"""
-    result = PluginService.delete_plugin_version(db, plugin_id, version_id)
+    result = await PluginService.delete_plugin_version(db, plugin_id, version_id)
     if not result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
