@@ -92,7 +92,7 @@ class DataService:
                     "frame_id": frame.id,
                     "text": frame.ocr_text.text,
                     "app_name": frame.ocr_text.app_name,
-                    "window_name": frame.ocr_text.window_name,
+                    "window_name": frame.ocr_text.window_name if frame.ocr_text.window_name is not None else "",
                     "focused": frame.ocr_text.focused,
                     "text_length": frame.ocr_text.text_length if frame.ocr_text.text_length is not None else 0,
                     "extracted_at": datetime.utcnow().isoformat(),

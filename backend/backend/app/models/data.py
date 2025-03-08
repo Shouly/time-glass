@@ -8,7 +8,7 @@ class OcrText(BaseModel):
     text_json: str
     app_name: str
     ocr_engine: str
-    window_name: str
+    window_name: Optional[str] = None
     focused: bool
     text_length: Optional[int] = Field(default=0)
 
